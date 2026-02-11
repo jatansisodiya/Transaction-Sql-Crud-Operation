@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Models\Models.csproj" />
-    <ProjectReference Include="..\Sql Connection\Sql Connection.csproj" />
+    <ProjectReference Include="..\Models\Transaction.Models.csproj" />
+    <ProjectReference Include="..\Sql Connection\Transaction.SQLConnection.csproj" />
   </ItemGroup>
 
 </Project>

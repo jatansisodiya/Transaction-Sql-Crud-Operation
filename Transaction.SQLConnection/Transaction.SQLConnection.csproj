@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>Transaction.SQLConnection</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Transaction Developer</Authors>
+    <Description>A reusable SQL connection library with Unit of Work pattern, transaction support, and stored procedure execution using ADO.NET.</Description>
+    <PackageTags>sql;transaction;unitofwork;ado.net;stored-procedure</PackageTags>
+  </PropertyGroup>
+
+</Project>

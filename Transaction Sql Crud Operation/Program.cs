@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi;
 using Transaction_Sql_Crud_Operation.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,9 +33,14 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
 // Register the configuration for SwaggerGenOptions to generate documentation for each API version
-//builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
+builder.Services.AddSwaggerGen(s =>
+{
+    // Define a Swagger document with metadata for the API
+    s.SwaggerDoc("v1", new OpenApiInfo { Title = "Transaction Sql Crud Operation API", Version = "v1", Contact = new OpenApiContact { Name = "Transaction Developer" } });
 
-builder.Services.AddSwaggerGen();
+    // Register the custom operation filter for swagger
+    //s.OperationFilter<SwaggerHeadersFilter>();
+});
 
 var app = builder.Build();
 

@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/Class Libary/">
-    <Project Path="Models/Models.csproj" Id="f64e2bd7-0faf-49f5-a796-2add31c958ce" />
-    <Project Path="Sql Connection/Sql Connection.csproj" Id="94366ccb-f533-4268-a53e-f928645dc133" />
+    <Project Path="Models/Transaction.Models.csproj" Id="f64e2bd7-0faf-49f5-a796-2add31c958ce" />
+    <Project Path="Sql Connection/Transaction.SQLConnection.csproj" Id="94366ccb-f533-4268-a53e-f928645dc133" />
   </Folder>
   <Project Path="Transaction Sql Crud Operation/Transaction Sql Crud Operation.csproj" />
 </Solution>
