@@ -1,6 +1,10 @@
-@Transaction_Sql_Crud_Operation_HostAddress = http://localhost:5039
+@Transaction Sql Crud Operation_HostAddress = https://localhost:5039
 
 GET {{Transaction_Sql_Crud_Operation_HostAddress}}/weatherforecast/
 Accept: application/json
+
+###
+
+GET {{Transaction Sql Crud Operation_HostAddress}}/api/v1/User/details
 
 ###

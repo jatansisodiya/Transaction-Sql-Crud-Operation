@@ -1,0 +1,250 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Person Management System</title>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-people-fill me-2"></i>Person Management
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container py-4">
+
+        <!-- ========================================
+             FORM SECTION - Personal Details + Qualifications
+             ======================================== -->
+        <div class="card shadow mb-4" id="formCard">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-plus me-2 text-primary"></i>
+                    <span id="formTitle">Add New Person</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="personForm" novalidate>
+                    <input type="hidden" id="personId" value="0">
+
+                    <!-- Personal Details Section -->
+                    <div class="section-title">
+                        <i class="bi bi-person"></i> Personal Details
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <!-- Name -->
+                        <div class="col-md-6">
+                            <label for="txtName" class="form-label">
+                                Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="txtName"
+                                   placeholder="Enter full name" maxlength="100" required>
+                            <div class="invalid-feedback">Name is required</div>
+                        </div>
+
+                        <!-- Mobile No -->
+                        <div class="col-md-6">
+                            <label for="txtMobile" class="form-label">
+                                Mobile No <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-phone"></i></span>
+                                <input type="text" class="form-control" id="txtMobile"
+                                       placeholder="10-digit mobile number" maxlength="10" required>
+                                <div class="invalid-feedback">Enter valid 10-digit mobile number</div>
+                            </div>
+                        </div>
+
+                        <!-- Age -->
+                        <div class="col-md-6">
+                            <label for="txtAge" class="form-label">
+                                Age <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control" id="txtAge"
+                                   placeholder="Enter age" min="1" max="150" required>
+                            <div class="invalid-feedback">Age must be greater than 0</div>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="col-md-6">
+                            <label for="txtAddress" class="form-label">Address</label>
+                            <input type="text" class="form-control" id="txtAddress"
+                                   placeholder="Enter address (optional)" maxlength="500">
+                        </div>
+                    </div>
+
+                    <!-- Qualifications Section -->
+                    <div class="section-title d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-mortarboard"></i> Qualifications</span>
+                        <button type="button" class="btn btn-success btn-sm" id="btnAddQualification">
+                            <i class="bi bi-plus-lg"></i> Add Qualification
+                        </button>
+                    </div>
+
+                    <div class="qualification-container" id="qualificationContainer">
+                        <!-- Dynamic qualification rows will be added here -->
+                        <div class="no-qualification-msg" id="noQualificationMsg">
+                            <i class="bi bi-info-circle"></i>
+                            No qualifications added. Click "Add Qualification" to add.
+                        </div>
+                    </div>
+
+                    <!-- Form Buttons -->
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary" id="btnSubmit">
+                            <i class="bi bi-check-lg me-1"></i>
+                            <span id="btnSubmitText">Save Person</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="btnReset">
+                            <i class="bi bi-x-lg me-1"></i> Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ========================================
+             GRID SECTION - Person List
+             ======================================== -->
+        <div class="card shadow">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-table me-2 text-primary"></i>Person List
+                </h5>
+                <button class="btn btn-outline-secondary btn-sm" id="btnRefresh">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0" id="personTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 5%;">#</th>
+                                <th style="width: 20%;">Name</th>
+                                <th style="width: 15%;">Mobile</th>
+                                <th style="width: 10%;">Age</th>
+                                <th style="width: 25%;">Address</th>
+                                <th style="width: 25%;" class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personTableBody">
+                            <!-- Data loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white">
+                <small class="text-muted">Total Records: <strong id="totalRecords">0</strong></small>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         VIEW DETAILS MODAL
+         ======================================== -->
+    <div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-eye me-2"></i>Person Details
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="viewModalBody">
+                    <!-- Details loaded dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         DELETE CONFIRMATION MODAL
+         ======================================== -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        Are you sure you want to delete <strong id="deletePersonName"></strong>?
+                        <br><small class="text-muted">This will also delete all associated qualifications.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmDelete">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         LOADING OVERLAY
+         ======================================== -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 mb-0">Please wait...</p>
+        </div>
+    </div>
+
+    <!-- ========================================
+         TOAST CONTAINER
+         ======================================== -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+    <!-- ========================================
+         QUALIFICATION ROW TEMPLATE
+         ======================================== -->
+    <template id="qualificationTemplate">
+        <div class="qualification-row" data-index="">
+            <div class="row g-2 align-items-end">
+                <div class="col-auto">
+                    <span class="qual-number badge bg-primary">1</span>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label small mb-1">
+                        Qualification Name <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control form-control-sm qual-name"
+                           placeholder="e.g., B.Tech, MBA" maxlength="100" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small mb-1">
+                        Marks (%) <span class="text-danger">*</span>
+                    </label>
+                    <input type="number" class="form-control form-control-sm qual-marks"
+                           placeholder="0-100" min="0" max="100" step="0.01" required>
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-outline-danger btn-sm btn-remove-qual" title="Remove">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <input type="hidden" class="qual-id" value="0">
+        </div>
+    </template>
+</body>
+</html>

@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Reflection;
 using Transaction.SQLConnection.Interfaces;
 using Transaction.SQLConnection.Sql;
 
-namespace Transaction.SQLConnection.Extensions;
+namespace Transaction_Sql_Crud_Operation.Infrastructure;
 
 /// <summary>
 /// Extension methods for registering Transaction.SQLConnection services.
@@ -35,6 +35,42 @@ public static class ServiceCollectionExtensions
         // Register transactional repository as scoped (stateful per request)
         services.AddScoped<ITransactionalRepositoryAsync, TransactionalRepositoryAsync>();
         services.AddScoped<TransactionalRepositoryAsync>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Automatically discovers and registers all repositories from the specified assembly.
+    /// Repositories are classes ending with "Repository" that implement an interface.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="assembly">The assembly to scan for repositories. If null, uses the calling assembly.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddRepositories(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        Assembly assembly = Assembly.GetCallingAssembly();
+
+        // Get all classes ending with "Repository" (excluding TransactionalRepositoryAsync which is registered separately)
+        var repositoryTypes = assembly.GetTypes()
+            .Where(t => t.IsClass
+                && !t.IsAbstract
+                && t.Name.EndsWith("Repository")
+                && t != typeof(TransactionalRepositoryAsync));
+
+        foreach (var repoType in repositoryTypes)
+        {
+            // Find the interface that matches "I{RepositoryName}" pattern or the first interface
+            var interfaceType = repoType.GetInterfaces()
+                .FirstOrDefault(i => i.Name == $"I{repoType.Name}")
+                ?? repoType.GetInterfaces().FirstOrDefault();
+
+            if (interfaceType == null)
+                continue;
+
+            services.AddScoped(interfaceType, repoType);
+        }
 
         return services;
     }

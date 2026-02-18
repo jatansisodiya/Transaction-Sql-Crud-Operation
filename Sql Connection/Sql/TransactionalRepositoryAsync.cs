@@ -104,6 +104,8 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
         ValidateExecutionState(storedProcedureName);
 
         bool isStandaloneTransaction = !HasActiveTransaction;
+        T1 result1;
+        T2 result2;
 
         try
         {
@@ -113,18 +115,24 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
             }
 
             await using var command = CreateCommand(storedProcedureName, parameters, commandTimeout);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-            // Read first result set
-            var result1 = await EntityMapper.ReadResultSetAsync<T1>(reader, cancellationToken);
-
-            // Move to second result set
-            if (!await reader.NextResultAsync(cancellationToken))
+            
+            // Use explicit scope for reader to ensure it's closed before commit
+            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
             {
-                throw new InvalidOperationException("Expected second result set but none found.");
-            }
+                // Read first result set
+                result1 = await EntityMapper.ReadResultSetAsync<T1>(reader, cancellationToken);
 
-            var result2 = await EntityMapper.ReadResultSetAsync<T2>(reader, cancellationToken);
+                // Move to second result set
+                if (!await reader.NextResultAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException("Expected second result set but none found.");
+                }
+
+                result2 = await EntityMapper.ReadResultSetAsync<T2>(reader, cancellationToken);
+                
+                // Explicitly close the reader before commit
+                await reader.CloseAsync();
+            }
 
             if (isStandaloneTransaction)
             {
@@ -156,6 +164,9 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
         ValidateExecutionState(storedProcedureName);
 
         bool isStandaloneTransaction = !HasActiveTransaction;
+        T1 result1;
+        T2 result2;
+        T3 result3;
 
         try
         {
@@ -165,21 +176,27 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
             }
 
             await using var command = CreateCommand(storedProcedureName, parameters, commandTimeout);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-            var result1 = await EntityMapper.ReadResultSetAsync<T1>(reader, cancellationToken);
-
-            if (!await reader.NextResultAsync(cancellationToken))
+            
+            // Use explicit scope for reader to ensure it's closed before commit
+            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
             {
-                throw new InvalidOperationException("Expected second result set but none found.");
-            }
-            var result2 = await EntityMapper.ReadResultSetAsync<T2>(reader, cancellationToken);
+                result1 = await EntityMapper.ReadResultSetAsync<T1>(reader, cancellationToken);
 
-            if (!await reader.NextResultAsync(cancellationToken))
-            {
-                throw new InvalidOperationException("Expected third result set but none found.");
+                if (!await reader.NextResultAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException("Expected second result set but none found.");
+                }
+                result2 = await EntityMapper.ReadResultSetAsync<T2>(reader, cancellationToken);
+
+                if (!await reader.NextResultAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException("Expected third result set but none found.");
+                }
+                result3 = await EntityMapper.ReadResultSetAsync<T3>(reader, cancellationToken);
+                
+                // Explicitly close the reader before commit
+                await reader.CloseAsync();
             }
-            var result3 = await EntityMapper.ReadResultSetAsync<T3>(reader, cancellationToken);
 
             if (isStandaloneTransaction)
             {
