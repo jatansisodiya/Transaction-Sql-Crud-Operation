@@ -11,7 +11,20 @@
 // ==========================================
 // CONFIGURATION
 // ==========================================
-AccessControl
+const CONFIG = {
+    // Use injected config from server, fallback to localhost for standalone testing
+    API_BASE_URL: (window.AppConfig && window.AppConfig.API_BASE_URL)
+        || 'http://localhost:5039/api/v1/Person',
+    ENDPOINTS: {
+        GET_ALL: '/details',
+        GET_BY_ID: '/{id}',
+        SAVE: '/save',
+        UPDATE: '/{id}',
+        DELETE: '/{id}',
+        ADD_QUALIFICATION: '/{id}/qualifications',
+        DELETE_QUALIFICATION: '/qualifications/{id}'
+    }
+};
 
 // ==========================================
 // APPLICATION STATE

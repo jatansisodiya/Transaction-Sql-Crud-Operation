@@ -36,6 +36,14 @@
             @RenderBody()
         </main>
     </div>
+    <!-- Add this in the <head> or before site.js script -->
+    <script>
+        @inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+        // Environment-based API configuration
+        window.AppConfig = {
+            API_BASE_URL: '@Configuration["ApiSettings:BaseUrl"]'
+        };
+    </script>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
