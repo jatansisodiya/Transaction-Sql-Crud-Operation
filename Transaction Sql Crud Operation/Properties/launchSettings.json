@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "http": {
+    "https": {
       "commandName": "Project",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
@@ -14,6 +14,14 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "Local Domain": {
+      "commandName": "IIS",
+      "launchBrowser": true,
+      "launchUrl": "https://api.dev.com",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
     }
   },
   "$schema": "https://json.schemastore.org/launchsettings.json",
@@ -23,6 +31,6 @@
     "iisExpress": {
       "applicationUrl": "https://localhost:59356/",
       "sslPort": 44391
-    }
+    } 
   }
 }

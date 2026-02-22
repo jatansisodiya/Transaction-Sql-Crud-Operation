@@ -33,6 +33,14 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "Local Domain": {
+      "commandName": "IIS",
+      "launchBrowser": true,
+      "launchUrl": "https://web.dev.com",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
     }
   }
 }
