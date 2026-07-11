@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - master
+      - act -j build-test-publish 
   pull_request:
     branches:
       - main
       - master
+      - catthehacker/ubuntu:full-latest   
   workflow_dispatch:
 
 jobs:
