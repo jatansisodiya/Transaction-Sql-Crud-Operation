@@ -61,5 +61,5 @@ jobs:
         with:
           app-name: 'Qualifications'
           slot-name: 'Production'
-          package: ./.net-app
+          package: .
           
