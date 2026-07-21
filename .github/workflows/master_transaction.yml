@@ -4,9 +4,6 @@
 name: Build and deploy ASP.Net Core app to Azure Web App - transaction
 
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
 
 jobs:
@@ -24,16 +21,16 @@ jobs:
           dotnet-version: '10.x'
 
       - name: Build with dotnet
-        run: dotnet build --configuration Release
+        run: dotnet build  Transaction Sql Crud Operation/Transaction Sql Crud Operation.csproj --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        run: dotnet publish  Transaction Sql Crud Operation/Transaction Sql Crud Operation.csproj -c Release -o "${{github.workspace}}/mytransapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: .net-trans-app
+          path: ${{github.workspace}}/mytransapp
 
   deploy:
     runs-on: windows-latest
@@ -46,7 +43,7 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: .net-app
+          name: .net-trans-app
       
       - name: Login to Azure
         uses: azure/login@v2
