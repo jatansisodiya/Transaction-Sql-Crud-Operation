@@ -21,10 +21,10 @@ jobs:
           dotnet-version: '10.x'
 
       - name: Build with dotnet
-        run: dotnet build  Transaction Sql Crud Operation/Transaction Sql Crud Operation.csproj --configuration Release
+        run: dotnet build ".\Transaction Sql Crud Operation\Transaction Sql Crud Operation.csproj" --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish  Transaction Sql Crud Operation/Transaction Sql Crud Operation.csproj -c Release -o "${{github.workspace}}/mytransapp"
+        run: dotnet publish ".\Transaction Sql Crud Operation\Transaction Sql Crud Operation.csproj" -c Release -o "${{github.workspace}}/mytransapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
