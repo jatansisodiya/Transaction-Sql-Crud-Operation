@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - Qualifications
+name: Build and deploy ASP.Net Core app to Azure Web App - transaction
 
 on:
   workflow_dispatch:
@@ -21,16 +21,16 @@ jobs:
           dotnet-version: '10.x'
 
       - name: Build with dotnet
-        run: dotnet build Qualification/Qualification.csproj  --configuration Release
+        run: dotnet build ".\Transaction Sql Crud Operation\Transaction Sql Crud Operation.csproj" --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish Qualification/Qualification.csproj  -c Release -o "${{ github.workspace }}/myapp"
+        run: dotnet publish ".\Transaction Sql Crud Operation\Transaction Sql Crud Operation.csproj" -c Release -o "${{github.workspace}}/mytransapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{ github.workspace }}/myapp
+          name: .net-trans-app
+          path: ${{github.workspace}}/mytransapp
 
   deploy:
     runs-on: windows-latest
@@ -43,20 +43,20 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: .net-app
+          name: .net-trans-app
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_138FDBFB8A344298AC383EAE62A6C359 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B046658B722D454C8010EBCB91C2082C }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C8DF9789E0924B26B568ECCD4DCD52EA }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_70B1DF3AA4F54F66A0F2B9FC8A6B3523 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_209CC44F33374B79A9D8A92D632C2349 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_7C6D2D88F8D04BDEAAF7A9773DF6B03B }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'Qualifications'
+          app-name: 'transaction'
           slot-name: 'Production'
           package: .
           
