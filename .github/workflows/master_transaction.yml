@@ -46,7 +46,7 @@ jobs:
           name: .net-trans-app
       
       - name: Login to Azure
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_70B1DF3AA4F54F66A0F2B9FC8A6B3523 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_209CC44F33374B79A9D8A92D632C2349 }}
