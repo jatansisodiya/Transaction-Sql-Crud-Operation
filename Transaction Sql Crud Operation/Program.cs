@@ -1,8 +1,13 @@
+using CommonLogger;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using Transaction_Sql_Crud_Operation.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure master logging toggle and ignored API URLs for telemetry logging
+CommonLogger.CommonLogger.SetLoggingEnabled(builder.Configuration.GetValue<bool>("ApplicationInsights:EnableLogging", true));
+CommonLogger.CommonLogger.IgnoreApiUrl("/health", "/swagger", "/favicon.ico");
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -18,7 +23,12 @@ builder.Services.AddControllers(options =>
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddEndpointsApiExplorer();
 
-//builder.Services.AddExceptionHandler<>(); need to know the ussage 
+// Register Application Insights Telemetry & CommonLogger
+builder.Services.AddApplicationInsightsTelemetry();
+builder.Services.AddCommonLogger();
+
+// Register Global Exception Handler
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 //builder.Services
@@ -57,6 +67,8 @@ builder.Services.AddOutputCache(options =>
 });
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // ==========================================
 // Add CORS Policy

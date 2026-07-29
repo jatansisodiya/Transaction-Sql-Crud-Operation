@@ -1,7 +1,10 @@
-using Microsoft.ApplicationInsights;
-using Microsoft.IdentityModel.Abstractions;
+using CommonLogger;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure master logging toggle and ignored API URLs for telemetry logging
+CommonLogger.CommonLogger.SetLoggingEnabled(builder.Configuration.GetValue<bool>("ApplicationInsights:EnableLogging", true));
+CommonLogger.CommonLogger.IgnoreApiUrl("/health", "/favicon.ico");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -10,20 +13,18 @@ builder.Services
     .AddRazorPages()
     .AddRazorRuntimeCompilation();
 
+// Register Application Insights & CommonLogger
 builder.Services.AddApplicationInsightsTelemetry();
+builder.Services.AddCommonLogger();
+
+// Register Global Exception Handler
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
-var telemetryConfig = app.Services.GetRequiredService<Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration>();
 
-Console.WriteLine($"AI Connection String: {telemetryConfig.ConnectionString}");
-// Test Application Insights on startup
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
-logger.LogInformation("Application Insights Startup Test");
+app.UseExceptionHandler();
 
-var telemetry = app.Services.GetRequiredService<TelemetryClient>();
-
-telemetry.TrackTrace("AI_TEST_DIRECT");
-telemetry.Flush();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

@@ -1,5 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
+using CommonLogger;
+using Microsoft.Data.SqlClient;
 using System.Data;
 using Transaction.SQLConnection.Exceptions;
 using Transaction.SQLConnection.Interfaces;
@@ -14,7 +14,7 @@ namespace Transaction.SQLConnection.Sql;
 public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
 {
     private readonly IConnectionFactoryAsync _connectionFactory;
-    private readonly ILogger<TransactionalRepositoryAsync> _logger;
+    private readonly ICommonLogger _logger;
     private const int DefaultCommandTimeout = 30;
 
     private SqlConnection? _connection;
@@ -37,7 +37,7 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
 
     public TransactionalRepositoryAsync(
         IConnectionFactoryAsync connectionFactory,
-        ILogger<TransactionalRepositoryAsync> logger)
+        ICommonLogger logger)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -78,8 +78,7 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing stored procedure: {StoredProcedure} at result set {ResultSetIndex}",
-                storedProcedureName, resultSetIndex);
+            _logger.LogError(ex, $"Error executing stored procedure: {storedProcedureName} at result set {resultSetIndex}");
 
             if (isStandaloneTransaction)
             {

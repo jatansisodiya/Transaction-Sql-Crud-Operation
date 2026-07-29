@@ -1,11 +1,11 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
+using Microsoft.Data.SqlClient;
+using CommonLogger;
 using Transaction_Sql_Crud_Operation.Models;
 using Transaction.SQLConnection.Interfaces;
 
 namespace Transaction_Sql_Crud_Operation.Repositories;
 
-public class UserRepository(ITransactionalRepositoryAsync repository, ILogger<UserRepository> logger) 
+public class UserRepository(ITransactionalRepositoryAsync repository, ICommonLogger logger) 
     : IUserRepository
 {
     // Case 1: Return scalar value (int)
@@ -23,7 +23,7 @@ public class UserRepository(ITransactionalRepositoryAsync repository, ILogger<Us
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
 
-        logger.LogInformation("Getting user by ID: {UserId}", userId);
+        logger.LogInformation($"Getting user by ID: {userId}");
 
         return await repository.ExecuteInTransactionAsync<User>(
             "usp_GetAspNetUserById",
@@ -106,7 +106,7 @@ public class UserRepository(ITransactionalRepositoryAsync repository, ILogger<Us
             // All SPs succeeded - commit transaction
             await repository.CommitAsync();
 
-            logger.LogInformation("User created successfully with ID: {UserId}", createdId);
+            logger.LogInformation($"User created successfully with ID: {createdId}");
             return (createdId, createdUser);
         }
         catch (Exception ex)
@@ -128,7 +128,7 @@ public class UserRepository(ITransactionalRepositoryAsync repository, ILogger<Us
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(criteria);
 
-        logger.LogInformation("Updating and fetching users with criteria: {Criteria}", criteria);
+        logger.LogInformation($"Updating and fetching users with criteria: {criteria}");
 
         try
         {
@@ -144,7 +144,7 @@ public class UserRepository(ITransactionalRepositoryAsync repository, ILogger<Us
             // All operations succeeded - commit transaction
             await repository.CommitAsync();
 
-            logger.LogInformation("Updated {Count} users successfully", updatedCount);
+            logger.LogInformation($"Updated {updatedCount} users successfully");
             return (updatedCount, updatedUsers);
         }
         catch (Exception ex)
@@ -163,7 +163,7 @@ public class UserRepository(ITransactionalRepositoryAsync repository, ILogger<Us
     // Helper method for Case 8 - can also be called independently
     public async Task<int> UpdateUsersByCriteriaAsync(string criteria)
     {
-        logger.LogInformation("Updating users by criteria: {Criteria}", criteria);
+        logger.LogInformation($"Updating users by criteria: {criteria}");
 
         return await repository.ExecuteInTransactionAsync<int>(
             "usp_UpdateUsersByCriteria",
@@ -173,7 +173,7 @@ public class UserRepository(ITransactionalRepositoryAsync repository, ILogger<Us
     // Helper method for Case 8 - can also be called independently
     public async Task<List<User>> FetchUpdatedUsersAsync(string criteria)
     {
-        logger.LogInformation("Fetching updated users by criteria: {Criteria}", criteria);
+        logger.LogInformation($"Fetching updated users by criteria: {criteria}");
 
         return await repository.ExecuteInTransactionAsync<List<User>>(
             "usp_GetUsersByCriteria",

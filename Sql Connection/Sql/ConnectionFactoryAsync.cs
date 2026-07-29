@@ -1,6 +1,6 @@
-﻿using Microsoft.Data.SqlClient;
+using CommonLogger;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Transaction.SQLConnection.Interfaces;
 
 namespace Transaction.SQLConnection.Sql;
@@ -11,11 +11,11 @@ namespace Transaction.SQLConnection.Sql;
 public sealed class ConnectionFactoryAsync : IConnectionFactoryAsync
 {
     private readonly string _connectionString;
-    private readonly ILogger<ConnectionFactoryAsync> _logger;
+    private readonly ICommonLogger _logger;
 
     public string ConnectionStringName { get; }
 
-    public ConnectionFactoryAsync(IConfiguration configuration, ILogger<ConnectionFactoryAsync> logger, string connectionStringName = "DefaultConnection")
+    public ConnectionFactoryAsync(IConfiguration configuration, ICommonLogger logger, string connectionStringName = "DefaultConnection")
     {
         ArgumentNullException.ThrowIfNull(configuration);
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -32,7 +32,7 @@ public sealed class ConnectionFactoryAsync : IConnectionFactoryAsync
         try
         {
             await connection.OpenAsync(cancellationToken);
-            _logger.LogDebug("SQL connection opened successfully.");
+            _logger.LogTrace("SQL connection opened successfully.");
             return connection;
         }
         catch (Exception ex)

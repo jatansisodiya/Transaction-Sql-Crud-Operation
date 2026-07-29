@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Transaction.SQLConnection.Interfaces;
 using Transaction.SQLConnection.Sql;
 
@@ -25,7 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IConnectionFactoryAsync>(sp =>
         {
             var configuration = sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
-            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ConnectionFactoryAsync>>();
+            var logger = sp.GetRequiredService<CommonLogger.ICommonLogger>();
             return new ConnectionFactoryAsync(configuration, logger, connectionStringName);
         });
 

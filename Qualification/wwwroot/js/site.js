@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ==========================================
  * Person Management SPA - Main JavaScript
  * ==========================================
@@ -7,6 +7,66 @@
  * Author: Senior Frontend Developer
  * Version: 1.0.0
  */
+
+// ==========================================
+// APPLICATION INSIGHTS BROWSER LOGGER
+// ==========================================
+const AppLogger = {
+    logTrace: function (message, customProps = {}) {
+        if (!window.AppConfig || window.AppConfig.ENABLE_LOGGING !== true) return;
+        if (window.appInsights) {
+            window.appInsights.trackTrace({
+                message: message,
+                severityLevel: 1
+            }, Object.assign({
+                LogType: "Browser",
+                ClientUrl: window.location.href,
+                Referer: document.referrer || "Direct",
+                UserAgent: navigator.userAgent,
+            }, customProps));
+            window.appInsights.flush();
+        }
+    },
+    logError: function (errorMsg, exception = null, customProps = {}) {
+        if (!window.AppConfig || window.AppConfig.ENABLE_LOGGING !== true) return;
+        if (window.appInsights) {
+            if (exception) {
+                window.appInsights.trackException({
+                    exception: exception,
+                    properties: Object.assign({
+                        LogType: "Browser",
+                        ClientUrl: window.location.href,
+                        Referer: document.referrer || "Direct",
+                        UserAgent: navigator.userAgent,
+                    }, customProps)
+                });
+            } else {
+                window.appInsights.trackTrace({
+                    message: errorMsg,
+                    severityLevel: 3
+                }, Object.assign({
+                    LogType: "Browser",
+                    ClientUrl: window.location.href,
+                    Referer: document.referrer || "Direct",
+                    UserAgent: navigator.userAgent,
+                }, customProps));
+            }
+            window.appInsights.flush();
+        }
+    }
+};
+
+window.onerror = function (message, source, lineno, colno, error) {
+    AppLogger.logError("Unhandled Browser Error: " + message, error, {
+        SourceFile: source,
+        LineNumber: lineno,
+        ColumnNumber: colno
+    });
+};
+
+window.onunhandledrejection = function (event) {
+    AppLogger.logError("Unhandled Promise Rejection: " + event.reason, event.reason);
+};
 
 // ==========================================
 // CONFIGURATION
@@ -77,9 +137,12 @@ function apiCall(method, url, data, successCallback, errorCallback) {
         // Before Send - Add any additional headers
         // ==========================================
         beforeSend: function (xhr) {
-            // You can add more headers here if needed
-            // xhr.setRequestHeader('Authorization', 'Bearer ' + token);
             console.log('Making request to:', url);
+            AppLogger.logTrace(`AJAX ${method} request to ${url}`, {
+                TargetUrl: url,
+                Method: method,
+                HitSource: window.location.href
+            });
         },
 
         success: function (response) {
@@ -106,6 +169,13 @@ function apiCall(method, url, data, successCallback, errorCallback) {
             } catch (e) {
                 errorMessage = error || status;
             }
+
+            AppLogger.logError(`AJAX Error on ${method} ${url}: ${errorMessage}`, null, {
+                TargetUrl: url,
+                Method: method,
+                Status: status,
+                StatusCode: xhr ? xhr.status : 0
+            });
 
             if (typeof errorCallback === 'function') {
                 errorCallback(errorMessage, xhr);

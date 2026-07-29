@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+@inject Microsoft.ApplicationInsights.AspNetCore.JavaScriptSnippet JavaScriptSnippet
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -8,6 +9,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Qualification.styles.css" asp-append-version="true" />
+    @Html.Raw(JavaScriptSnippet.FullScript)
 </head>
 <body>
     <header>
@@ -39,9 +41,10 @@
     <!-- Add this in the <head> or before site.js script -->
     <script>
         @inject Microsoft.Extensions.Configuration.IConfiguration Configuration
-        // Environment-based API configuration
+        // Environment-based API configuration & logging toggle
         window.AppConfig = {
-            API_BASE_URL: '@Configuration["ApiSettings:BaseUrl"]'
+            API_BASE_URL: '@Configuration["ApiSettings:BaseUrl"]',
+            ENABLE_LOGGING: @(CommonLogger.CommonLogger.IsLoggingEnabled.ToString().ToLower())
         };
     </script>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

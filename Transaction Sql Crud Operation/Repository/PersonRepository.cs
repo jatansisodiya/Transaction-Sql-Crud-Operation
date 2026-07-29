@@ -1,12 +1,12 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
+using Microsoft.Data.SqlClient;
+using CommonLogger;
 using System.Data;
 using Transaction_Sql_Crud_Operation.Models;
 using Transaction.SQLConnection.Interfaces;
 
 namespace Transaction_Sql_Crud_Operation.Repositories;
 
-public class PersonRepository(ITransactionalRepositoryAsync repository, ILogger<PersonRepository> logger)
+public class PersonRepository(ITransactionalRepositoryAsync repository, ICommonLogger logger)
     : IPersonRepository
 {
     // Get all persons with qualifications (two result sets)
@@ -24,7 +24,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, ILogger<
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(personId);
 
-        logger.LogInformation("Getting person by ID: {PersonId}", personId);
+        logger.LogInformation($"Getting person by ID: {personId}");
 
         return await repository.ExecuteMultipleResultSetsAsync<Person?, List<Qualification>>(
             "usp_Person_GetById",
@@ -38,7 +38,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, ILogger<
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Name);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.MobileNo);
 
-        logger.LogInformation("Creating person: {Name}", request.Name);
+        logger.LogInformation($"Creating person: {request.Name}");
 
         try
         {
@@ -73,7 +73,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, ILogger<
 
             await repository.CommitAsync();
 
-            logger.LogInformation("Person created with ID: {PersonId}", personId);
+            logger.LogInformation($"Person created with ID: {personId}");
             return personId;
         }
         catch (Exception ex)
@@ -90,7 +90,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, ILogger<
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(personId);
         ArgumentNullException.ThrowIfNull(request);
 
-        logger.LogInformation("Updating person: {PersonId}", personId);
+        logger.LogInformation($"Updating person: {personId}");
 
         try
         {
@@ -130,12 +130,12 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, ILogger<
 
             await repository.CommitAsync();
 
-            logger.LogInformation("Person updated: {PersonId}", personId);
+            logger.LogInformation($"Person updated: {personId}");
             return true;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error updating person {PersonId}, rolling back", personId);
+            logger.LogError(ex, $"Error updating person {personId}, rolling back");
             await repository.RollbackAsync();
             throw;
         }
@@ -146,7 +146,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, ILogger<
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(personId);
 
-        logger.LogInformation("Deleting person: {PersonId}", personId);
+        logger.LogInformation($"Deleting person: {personId}");
 
         var rowsAffected = await repository.ExecuteInTransactionAsync<int>(
             "usp_Person_Delete",
@@ -161,7 +161,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, ILogger<
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(personId);
         ArgumentNullException.ThrowIfNull(request);
 
-        logger.LogInformation("Adding qualification for person: {PersonId}", personId);
+        logger.LogInformation($"Adding qualification for person: {personId}");
 
         return await AddQualificationInternalAsync(personId, request);
     }
@@ -171,7 +171,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, ILogger<
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(qualificationId);
 
-        logger.LogInformation("Deleting qualification: {QualificationId}", qualificationId);
+        logger.LogInformation($"Deleting qualification: {qualificationId}");
 
         var rowsAffected = await repository.ExecuteInTransactionAsync<int>(
             "usp_Qualification_Delete",

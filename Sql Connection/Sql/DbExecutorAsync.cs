@@ -1,5 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
+using CommonLogger;
+using Microsoft.Data.SqlClient;
 using System.Data;
 using Transaction.SQLConnection.Exceptions;
 using Transaction.SQLConnection.Interfaces;
@@ -14,10 +14,10 @@ namespace Transaction.SQLConnection.Sql;
 public sealed class DbExecutorAsync : IDbExecutorAsync
 {
     private readonly IConnectionFactoryAsync _connectionFactory;
-    private readonly ILogger<DbExecutorAsync> _logger;
+    private readonly ICommonLogger _logger;
     private const int DefaultCommandTimeout = 30;
 
-    public DbExecutorAsync(IConnectionFactoryAsync connectionFactory, ILogger<DbExecutorAsync> logger)
+    public DbExecutorAsync(IConnectionFactoryAsync connectionFactory, ICommonLogger logger)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -41,7 +41,7 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
         }
         catch (Exception ex) when (ex is not DatabaseException)
         {
-            _logger.LogError(ex, "Error executing query: {StoredProcedure}", storedProcedure);
+            _logger.LogError(ex, $"Error executing query: {storedProcedure}");
             throw new DatabaseException($"Failed to execute query: {storedProcedure}", storedProcedure, ex);
         }
     }
@@ -64,7 +64,7 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
         }
         catch (Exception ex) when (ex is not DatabaseException)
         {
-            _logger.LogError(ex, "Error executing QuerySingleOrDefault: {StoredProcedure}", storedProcedure);
+            _logger.LogError(ex, $"Error executing QuerySingleOrDefault: {storedProcedure}");
             throw new DatabaseException($"Failed to execute query: {storedProcedure}", storedProcedure, ex);
         }
     }
@@ -86,7 +86,7 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
         }
         catch (Exception ex) when (ex is not DatabaseException)
         {
-            _logger.LogError(ex, "Error executing stored procedure: {StoredProcedure}", storedProcedure);
+            _logger.LogError(ex, $"Error executing stored procedure: {storedProcedure}");
             throw new DatabaseException($"Failed to execute stored procedure: {storedProcedure}", storedProcedure, ex);
         }
     }
@@ -115,7 +115,7 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
         }
         catch (Exception ex) when (ex is not DatabaseException)
         {
-            _logger.LogError(ex, "Error executing scalar: {StoredProcedure}", storedProcedure);
+            _logger.LogError(ex, $"Error executing scalar: {storedProcedure}");
             throw new DatabaseException($"Failed to execute scalar: {storedProcedure}", storedProcedure, ex);
         }
     }
