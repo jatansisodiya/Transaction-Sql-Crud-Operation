@@ -15,14 +15,14 @@ public static class CommonLoggerExtensions
 
         services.AddHttpContextAccessor();
 
-        services.AddSingleton<ICommonLogger>(sp =>
+        services.AddSingleton<IAILogger>(sp =>
         {
             var telemetryClient = sp.GetService<TelemetryClient>();
             var httpContextAccessor = sp.GetService<IHttpContextAccessor>();
-            var logger = new CommonLogger.CommonLogger(telemetryClient, httpContextAccessor);
+            var logger = new AILogger(telemetryClient, httpContextAccessor);
             if (telemetryClient != null)
             {
-                CommonLogger.CommonLogger.ConfigureStaticTelemetry(telemetryClient, httpContextAccessor);
+                AILogger.ConfigureStaticTelemetry(telemetryClient, httpContextAccessor);
             }
             return logger;
         });

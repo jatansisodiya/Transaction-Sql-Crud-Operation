@@ -6,14 +6,14 @@ using Microsoft.AspNetCore.Routing;
 
 namespace CommonLogger;
 
-public class GlobalExceptionHandler(ICommonLogger logger) : IExceptionHandler
+public class GlobalExceptionHandler(IAILogger logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         var request = httpContext.Request;
 
         // Skip logging if logging is disabled or request URL is registered in ignored list
-        if (!CommonLogger.IsLoggingEnabled || CommonLogger.IsUrlIgnored(request.Path))
+        if (!AILogger.IsLoggingEnabled || AILogger.IsUrlIgnored(request.Path))
         {
             return false;
         }
@@ -28,7 +28,7 @@ public class GlobalExceptionHandler(ICommonLogger logger) : IExceptionHandler
                           ?? "Unknown IP";
 
         // Read request body safely as string
-        string requestBody = await CommonLogger.ReadRequestBodyAsync(request);
+        string requestBody = await AILogger.ReadRequestBodyAsync(request);
 
         string referer = request.Headers["Referer"].ToString();
         string origin = request.Headers["Origin"].ToString();

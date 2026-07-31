@@ -3,8 +3,8 @@ using CommonLogger;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure master logging toggle and ignored API URLs for telemetry logging
-CommonLogger.CommonLogger.SetLoggingEnabled(builder.Configuration.GetValue<bool>("ApplicationInsights:EnableLogging", true));
-CommonLogger.CommonLogger.IgnoreApiUrl("/health", "/favicon.ico");
+AILogger.SetLoggingEnabled(builder.Configuration.GetValue<bool>("ApplicationInsights:EnableLogging", true));
+AILogger.IgnoreApiUrl("/health", "/favicon.ico");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace CommonLogger;
 
-public class CommonLogger : ICommonLogger
+public class AILogger : IAILogger
 {
     private readonly TelemetryClient? _telemetryClient;
     private readonly IHttpContextAccessor? _httpContextAccessor;
@@ -15,7 +15,7 @@ public class CommonLogger : ICommonLogger
     private static IHttpContextAccessor? _staticHttpContextAccessor;
     private static readonly object FileLock = new();
 
-    public CommonLogger(TelemetryClient? telemetryClient = null, IHttpContextAccessor? httpContextAccessor = null)
+    public AILogger(TelemetryClient? telemetryClient = null, IHttpContextAccessor? httpContextAccessor = null)
     {
         _telemetryClient = telemetryClient;
         _httpContextAccessor = httpContextAccessor;
@@ -266,7 +266,7 @@ public class CommonLogger : ICommonLogger
                     if (method == null) continue;
                     var declaringType = method.DeclaringType;
                     
-                    if (declaringType != null && declaringType.Assembly == typeof(CommonLogger).Assembly)
+                    if (declaringType != null && declaringType.Assembly == typeof(AILogger).Assembly)
                         continue;
 
                     string mName = declaringType != null ? $"{declaringType.Name}.{method.Name}" : method.Name;
@@ -287,7 +287,7 @@ public class CommonLogger : ICommonLogger
                 if (method == null) continue;
                 var declaringType = method.DeclaringType;
 
-                if (declaringType != null && (declaringType.Assembly == typeof(CommonLogger).Assembly || declaringType.FullName?.StartsWith("CommonLogger") == true))
+                if (declaringType != null && (declaringType.Assembly == typeof(AILogger).Assembly || declaringType.FullName?.StartsWith("CommonLogger") == true))
                 {
                     continue;
                 }

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Qualification.Controllers
 {
-    public class UserDetailController(ICommonLogger logger) : Controller
+    public class UserDetailController(IAILogger logger) : Controller
     {
         // GET: UserDetailController
         public ActionResult Index()

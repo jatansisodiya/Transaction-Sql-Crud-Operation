@@ -6,7 +6,7 @@ using Transaction.SQLConnection.Interfaces;
 
 namespace Transaction_Sql_Crud_Operation.Repositories;
 
-public class PersonRepository(ITransactionalRepositoryAsync repository, ICommonLogger logger)
+public class PersonRepository(ITransactionalRepositoryAsync repository, IAILogger logger)
     : IPersonRepository
 {
     // Get all persons with qualifications (two result sets)

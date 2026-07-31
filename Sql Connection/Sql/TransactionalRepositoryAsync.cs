@@ -14,7 +14,7 @@ namespace Transaction.SQLConnection.Sql;
 public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
 {
     private readonly IConnectionFactoryAsync _connectionFactory;
-    private readonly ICommonLogger _logger;
+    private readonly IAILogger _logger;
     private const int DefaultCommandTimeout = 30;
 
     private SqlConnection? _connection;
@@ -37,7 +37,7 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
 
     public TransactionalRepositoryAsync(
         IConnectionFactoryAsync connectionFactory,
-        ICommonLogger logger)
+        IAILogger logger)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));

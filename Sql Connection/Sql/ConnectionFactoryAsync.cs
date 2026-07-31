@@ -11,11 +11,11 @@ namespace Transaction.SQLConnection.Sql;
 public sealed class ConnectionFactoryAsync : IConnectionFactoryAsync
 {
     private readonly string _connectionString;
-    private readonly ICommonLogger _logger;
+    private readonly IAILogger _logger;
 
     public string ConnectionStringName { get; }
 
-    public ConnectionFactoryAsync(IConfiguration configuration, ICommonLogger logger, string connectionStringName = "DefaultConnection")
+    public ConnectionFactoryAsync(IConfiguration configuration, IAILogger logger, string connectionStringName = "DefaultConnection")
     {
         ArgumentNullException.ThrowIfNull(configuration);
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));

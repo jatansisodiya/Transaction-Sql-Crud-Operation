@@ -14,10 +14,10 @@ namespace Transaction.SQLConnection.Sql;
 public sealed class DbExecutorAsync : IDbExecutorAsync
 {
     private readonly IConnectionFactoryAsync _connectionFactory;
-    private readonly ICommonLogger _logger;
+    private readonly IAILogger _logger;
     private const int DefaultCommandTimeout = 30;
 
-    public DbExecutorAsync(IConnectionFactoryAsync connectionFactory, ICommonLogger logger)
+    public DbExecutorAsync(IConnectionFactoryAsync connectionFactory, IAILogger logger)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));

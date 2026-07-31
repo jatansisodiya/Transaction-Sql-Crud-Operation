@@ -1,6 +1,6 @@
 namespace CommonLogger;
 
-public interface ICommonLogger
+public interface IAILogger
 {
     /// <summary>
     /// Logs an exception with stack trace, dynamically resolved caller method name, file path, line number, and method parameter values to Application Insights and local file.

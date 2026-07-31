@@ -24,8 +24,8 @@ public static class ServiceCollectionExtensions
         // Register connection factory as singleton
         services.AddSingleton<IConnectionFactoryAsync>(sp =>
         {
-            var configuration = sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
-            var logger = sp.GetRequiredService<CommonLogger.ICommonLogger>();
+            var configuration = sp.GetRequiredService<IConfiguration>();
+            var logger = sp.GetRequiredService<CommonLogger.IAILogger>();
             return new ConnectionFactoryAsync(configuration, logger, connectionStringName);
         });
 

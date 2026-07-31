@@ -44,7 +44,7 @@
         // Environment-based API configuration & logging toggle
         window.AppConfig = {
             API_BASE_URL: '@Configuration["ApiSettings:BaseUrl"]',
-            ENABLE_LOGGING: @(CommonLogger.CommonLogger.IsLoggingEnabled.ToString().ToLower())
+            ENABLE_LOGGING: @(CommonLogger.AILogger.IsLoggingEnabled.ToString().ToLower())
         };
     </script>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

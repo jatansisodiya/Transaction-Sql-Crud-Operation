@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Qualification.Controllers
 {
-    public class HomeController(ICommonLogger logger) : Controller
+    public class HomeController(IAILogger logger) : Controller
     {
         public IActionResult Index()
         {

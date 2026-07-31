@@ -6,8 +6,8 @@ using Transaction_Sql_Crud_Operation.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure master logging toggle and ignored API URLs for telemetry logging
-CommonLogger.CommonLogger.SetLoggingEnabled(builder.Configuration.GetValue<bool>("ApplicationInsights:EnableLogging", true));
-CommonLogger.CommonLogger.IgnoreApiUrl("/health", "/swagger", "/favicon.ico");
+AILogger.SetLoggingEnabled(builder.Configuration.GetValue<bool>("ApplicationInsights:EnableLogging", true));
+AILogger.IgnoreApiUrl("/health", "/swagger", "/favicon.ico");
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {

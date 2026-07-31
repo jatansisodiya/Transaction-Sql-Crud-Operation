@@ -5,7 +5,7 @@ using Transaction.SQLConnection.Interfaces;
 
 namespace Transaction_Sql_Crud_Operation.Repositories;
 
-public class UserRepository(ITransactionalRepositoryAsync repository, ICommonLogger logger) 
+public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger logger) 
     : IUserRepository
 {
     // Case 1: Return scalar value (int)
