@@ -225,7 +225,7 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
         if (_transaction is not null)
         {
             _isExternalTransaction = true;
-            _logger.LogDebug("Transaction already active, reusing existing transaction.");
+            _logger.LogInformation("Transaction already active, reusing existing transaction.");
             return;
         }
 
@@ -233,7 +233,7 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
         _transaction = (SqlTransaction)await _connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         _isExternalTransaction = false;
 
-        _logger.LogDebug("Transaction started successfully.");
+        _logger.LogInformation("Transaction started successfully.");
     }
 
     /// <inheritdoc />
@@ -248,14 +248,14 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
 
         if (_isExternalTransaction)
         {
-            _logger.LogDebug("Skipping commit for externally managed transaction.");
+            _logger.LogInformation("Skipping commit for externally managed transaction.");
             return;
         }
 
         try
         {
             await _transaction.CommitAsync(cancellationToken);
-            _logger.LogDebug("Transaction committed successfully.");
+            _logger.LogInformation("Transaction committed successfully.");
         }
         finally
         {
@@ -274,14 +274,14 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
 
         if (_isExternalTransaction)
         {
-            _logger.LogDebug("Rollback requested for externally managed transaction - will be handled by caller.");
+            _logger.LogInformation("Rollback requested for externally managed transaction - will be handled by caller.");
             return;
         }
 
         try
         {
             await _transaction.RollbackAsync();
-            _logger.LogDebug("Transaction rolled back successfully.");
+            _logger.LogInformation("Transaction rolled back successfully.");
         }
         catch (Exception ex)
         {

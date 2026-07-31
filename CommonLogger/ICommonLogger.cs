@@ -28,14 +28,6 @@ public interface ICommonLogger
         IDictionary<string, string>? customProperties = null);
 
     /// <summary>
-    /// Logs a debug message with dynamically resolved caller method name, file path, line number, and method parameter values.
-    /// </summary>
-    void LogDebug(
-        string message,
-        object? parameterValues = null,
-        IDictionary<string, string>? customProperties = null);
-
-    /// <summary>
     /// Logs a trace message with dynamically resolved caller method name, file path, line number, and method parameter values.
     /// </summary>
     void LogTrace(

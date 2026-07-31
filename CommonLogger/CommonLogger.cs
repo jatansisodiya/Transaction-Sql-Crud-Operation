@@ -34,72 +34,8 @@ public class CommonLogger : ICommonLogger
     /// When set to true, AI logging runs. When false, no logs are saved or sent.
     /// </summary>
     public static bool IsLoggingEnabled { get; set; } = false;
-
-    /// <summary>
-    /// Configures whether logging is enabled or disabled globally.
-    /// </summary>
-    public static void SetLoggingEnabled(bool enabled)
-    {
-        IsLoggingEnabled = enabled;
-    }
-
+    
     private static readonly System.Collections.Concurrent.ConcurrentBag<string> IgnoredApiUrls = new();
-
-    /// <summary>
-    /// Registers one or more API URL paths/prefixes to be ignored from logging (e.g. "/health", "/swagger", "/favicon.ico").
-    /// </summary>
-    public static void IgnoreApiUrl(params string[] urlPaths)
-    {
-        if (urlPaths == null) return;
-        foreach (var path in urlPaths)
-        {
-            if (!string.IsNullOrWhiteSpace(path) && !IgnoredApiUrls.Contains(path, StringComparer.OrdinalIgnoreCase))
-            {
-                IgnoredApiUrls.Add(path);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Checks if a given request path matches any of the registered ignored API URLs/prefixes.
-    /// </summary>
-    public static bool IsUrlIgnored(string? requestPath)
-    {
-        if (string.IsNullOrWhiteSpace(requestPath)) return false;
-        foreach (var ignoredPath in IgnoredApiUrls)
-        {
-            if (requestPath.StartsWith(ignoredPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Safely reads the HttpRequest body as a string without breaking downstream reading or model binding.
-    /// </summary>
-    public static async Task<string> ReadRequestBodyAsync(HttpRequest request)
-    {
-        if (request == null || request.ContentLength == null || request.ContentLength == 0 || !request.Body.CanRead)
-        {
-            return string.Empty;
-        }
-
-        try
-        {
-            request.EnableBuffering();
-            request.Body.Position = 0;
-            using var reader = new System.IO.StreamReader(request.Body, System.Text.Encoding.UTF8, leaveOpen: true);
-            string bodyText = await reader.ReadToEndAsync();
-            request.Body.Position = 0;
-            return bodyText;
-        }
-        catch
-        {
-            return "[Error Reading Body]";
-        }
-    }
     
     /// <summary>
     /// Configures the static TelemetryClient and HttpContextAccessor for non-DI static logger calls.
@@ -136,14 +72,6 @@ public class CommonLogger : ICommonLogger
         IDictionary<string, string>? customProperties = null)
     {
         LogTraceStatic(message, SeverityLevel.Information, parameterValues, customProperties, _telemetryClient ?? _staticTelemetryClient, _httpContextAccessor ?? _staticHttpContextAccessor);
-    }
-
-    public void LogDebug(
-        string message,
-        object? parameterValues = null,
-        IDictionary<string, string>? customProperties = null)
-    {
-        LogTraceStatic(message, SeverityLevel.Verbose, parameterValues, customProperties, _telemetryClient ?? _staticTelemetryClient, _httpContextAccessor ?? _staticHttpContextAccessor);
     }
 
     public void LogTrace(
@@ -252,6 +180,71 @@ public class CommonLogger : ICommonLogger
         //LogFileOnly(severityLevel.ToString().ToUpper(), message, properties, null, caller.memberName, caller.filePath, caller.lineNumber);
     }
 
+
+    /// <summary>
+    /// Configures whether logging is enabled or disabled globally.
+    /// </summary>
+    public static void SetLoggingEnabled(bool enabled)
+    {
+        IsLoggingEnabled = enabled;
+    }
+
+
+    /// <summary>
+    /// Registers one or more API URL paths/prefixes to be ignored from logging (e.g. "/health", "/swagger", "/favicon.ico").
+    /// </summary>
+    public static void IgnoreApiUrl(params string[] urlPaths)
+    {
+        if (urlPaths == null) return;
+        foreach (var path in urlPaths)
+        {
+            if (!string.IsNullOrWhiteSpace(path) && !IgnoredApiUrls.Contains(path, StringComparer.OrdinalIgnoreCase))
+            {
+                IgnoredApiUrls.Add(path);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks if a given request path matches any of the registered ignored API URLs/prefixes.
+    /// </summary>
+    public static bool IsUrlIgnored(string? requestPath)
+    {
+        if (string.IsNullOrWhiteSpace(requestPath)) return false;
+        foreach (var ignoredPath in IgnoredApiUrls)
+        {
+            if (requestPath.StartsWith(ignoredPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Safely reads the HttpRequest body as a string without breaking downstream reading or model binding.
+    /// </summary>
+    public static async Task<string> ReadRequestBodyAsync(HttpRequest request)
+    {
+        if (request == null || request.ContentLength == null || request.ContentLength == 0 || !request.Body.CanRead)
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            request.EnableBuffering();
+            request.Body.Position = 0;
+            using var reader = new System.IO.StreamReader(request.Body, System.Text.Encoding.UTF8, leaveOpen: true);
+            string bodyText = await reader.ReadToEndAsync();
+            request.Body.Position = 0;
+            return bodyText;
+        }
+        catch
+        {
+            return "[Error Reading Body]";
+        }
+    }
     #endregion
 
     #region Private Helper Methods
