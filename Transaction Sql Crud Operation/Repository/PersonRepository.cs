@@ -16,7 +16,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, IAILogge
 
         return await repository.ExecuteMultipleResultSetsAsync<List<Person>, List<Qualification>>(
             "usp_Person_GetAll",
-            []);
+            [],isRead: true);
     }
 
     // Get person by ID with qualifications (two result sets)

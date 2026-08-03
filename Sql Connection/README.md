@@ -1,9 +1,10 @@
 # Transaction.SQLConnection
 
-A production-ready, reusable SQL connection class library for .NET 8+ applications implementing the **Unit of Work pattern** with **ADO.NET** for MS SQL Server.
+A production-ready, reusable SQL connection class library for .NET 10+ applications implementing the **Unit of Work pattern** and **CQRS (Command Query Responsibility Segregation)** with **ADO.NET** for MS SQL Server.
 
 ## Folder Structure
 
+```text
 Transaction.SQLConnection/
 │
 ├── Transaction.SQLConnection.csproj
@@ -19,87 +20,112 @@ Transaction.SQLConnection/
 │   ├── TransactionalRepositoryAsync.cs
 │   └── DbExecutorAsync.cs
 │
-├── Extensions/
-│   └── ServiceCollectionExtensions.cs
-│
 ├── Mapping/
 │   └── EntityMapper.cs
 │
 └── Exceptions/
     └── DatabaseException.cs
-	
+```
+
 ## Features
 
-- ✅ **Common SQL Connection Management** - Centralized connection factory
-- ✅ **Unit of Work Pattern** - Transaction management across multiple operations
-- ✅ **Stored Procedure Execution** - Full support for SPs with parameters
-- ✅ **Single Transaction Across Multiple SPs** - Execute multiple SPs in one transaction
-- ✅ **Automatic Rollback** - If any SP fails, all previous operations roll back
-- ✅ **Multiple Result Sets** - Support for SPs returning multiple SELECT results
-- ✅ **Async/Await** - Fully asynchronous implementation
-- ✅ **Clean Architecture** - Interface-based design with DI support
-- ✅ **Exception-Safe** - Proper resource cleanup and error handling
+- ✅ **CQRS Support (Command Query Responsibility Segregation)** - Separate Read Queries (`isRead = true`) from Write Commands (`isRead = false`)
+- ✅ **Centralized `CreateCommandAsync` Orchestration** - Single point for connection initialization, transaction attachment, and command setup
+- ✅ **Unit of Work Pattern** - Transaction management across single or multiple operations
+- ✅ **Stored Procedure Execution** - Full support for SPs with input/output parameters
+- ✅ **Multiple Result Sets** - Support for SPs returning multiple SELECT result sets as tuples
+- ✅ **Async/Await** - Fully asynchronous implementation with primary constructor syntax (.NET 10)
+- ✅ **Clean Architecture & DI Ready** - Interface-based design with Microsoft Dependency Injection support
 
 ---
 
-## Installation
+## CQRS (Command Query Responsibility Segregation) Support
 
-### 1. Add Project Reference
+The library supports CQRS separation in `ITransactionalRepositoryAsync` via the `isRead` parameter (default `false`):
 
-### 2. Configure Connection String
+- **Query / Read-only Operation (`isRead: true`)**: Opens a standalone connection without creating transaction locking or log flushing overhead.
+- **Command / Write Operation (`isRead: false`, Default)**: Automatically begins a transaction (if none is active), executes the command, and commits on success or rolls back on failure.
 
-### 3. Register Services
+### Centralized Command Orchestration (`CreateCommandAsync`)
+All execution methods delegate to `CreateCommandAsync`, which manages connections and transactions centrally:
 
----
+```csharp
+private async Task<SqlCommand> CreateCommandAsync(
+    string storedProcedureName,
+    SqlParameter[]? parameters,
+    int? commandTimeout,
+    bool isRead,
+    CancellationToken cancellationToken)
+{
+    // Centralized CQRS Connection & Transaction Management
+    if (!isRead && !HasActiveTransaction)
+    {
+        await BeginTransactionAsync(cancellationToken);
+    }
+    else if (isRead && !HasActiveTransaction && _connection is null)
+    {
+        _connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
+    }
 
-## Quick Start
+    SqlTransaction? activeTransaction = isRead ? null : _transaction;
 
-### Basic Repository Implementation
+    var command = new SqlCommand(storedProcedureName, _connection, activeTransaction)
+    {
+        CommandType = CommandType.StoredProcedure,
+        CommandTimeout = commandTimeout ?? DefaultCommandTimeout
+    };
 
----
+    if (parameters is { Length: > 0 })
+    {
+        command.Parameters.AddRange(parameters);
+    }
 
-## Summary of All Cases
-
-| Case | Method Signature | Return Type | Description |
-|------|-----------------|-------------|-------------|
-| **1** | `ExecuteInTransactionAsync<int>(sp, params)` | `int` | Scalar value (identity, count, etc.) |
-| **2** | `ExecuteInTransactionAsync<User>(sp, params)` | `User` | Single entity |
-| **3** | `ExecuteInTransactionAsync<List<User>>(sp, params)` | `List<User>` | List of entities |
-| **4** | `ExecuteInTransactionAsync<T>(sp, params, resultSetIndex: 1)` | `T` | Specific result set by index |
-| **5** | `ExecuteMultipleResultSetsAsync<T1, T2>(sp, params)` | `(T1, T2)` | Two result sets as tuple |
-| **6** | `ExecuteMultipleResultSetsAsync<T1, T2, T3>(sp, params)` | `(T1, T2, T3)` | Three result sets as tuple |
-
----
-
-## Detailed Examples
-
-### Case 1: Return Scalar Value (int)
-
-### Case 2: Return Single Entity (User)
-### Case 3: Return List of Entities (List<User>)
-### Case 4: Return Specific Result Set by Index
-### Case 5: Return Multiple Result Sets as Tuple (T1, T2)
-### Case 6: Return Multiple Result Sets as Tuple (T1, T2, T3)
-
----	
-
-## Transaction Management
-
-### Single SP Transaction (Automatic)
-
-When calling `ExecuteInTransactionAsync` without an active transaction, it automatically:
-1. Begins transaction
-2. Executes SP
-3. Commits on success / Rolls back on failure
-
-### Multiple SPs in Single Transaction (Manual)
-
-For multiple SPs that must succeed or fail together:
+    return command;
+}
+```
 
 ---
 
-## Transaction Flow Diagram
+## Quick Start & CQRS Examples
 
+### 1. CQRS Read Query (`isRead: true`)
+```csharp
+// Execute read query without transaction locking overhead
+var users = await repository.ExecuteInTransactionAsync<List<User>>(
+    "usp_GetAllUsers",
+    parameters: null,
+    isRead: true);
+```
+
+### 2. CQRS Write Command (`isRead: false`)
+```csharp
+// Execute write command with automatic transaction management
+var newUserId = await repository.ExecuteInTransactionAsync<int>(
+    "usp_CreateUser",
+    [new SqlParameter("@UserName", "JohnDoe")],
+    isRead: false);
+```
+
+### 3. Multiple Result Sets Query (`isRead: true`)
+```csharp
+// Read multiple result sets as a tuple
+var (users, summary) = await repository.ExecuteMultipleResultSetsAsync<List<User>, UserSummary>(
+    "usp_GetUsersWithSummary",
+    isRead: true);
+```
+
+---
+
+## Summary of Execution Methods
+
+| Case | Method Signature | Return Type | CQRS Usage (`isRead`) |
+|------|-----------------|-------------|------------------------|
+| **1** | `ExecuteInTransactionAsync<int>(sp, params, isRead: false)` | `int` | Scalar Command (Insert/Update) |
+| **2** | `ExecuteInTransactionAsync<User>(sp, params, isRead: true)` | `User` | Single Entity Query |
+| **3** | `ExecuteInTransactionAsync<List<User>>(sp, params, isRead: true)` | `List<User>` | List Query |
+| **4** | `ExecuteInTransactionAsync<T>(sp, params, resultSetIndex: 1, isRead: true)` | `T` | Specific Result Set Index Query |
+| **5** | `ExecuteMultipleResultSetsAsync<T1, T2>(sp, params, isRead: true)` | `(T1, T2)` | Two Result Sets Query |
+| **6** | `ExecuteMultipleResultSetsAsync<T1, T2, T3>(sp, params, isRead: true)` | `(T1, T2, T3)` | Three Result Sets Query |
 
 ---
 
@@ -109,36 +135,31 @@ For multiple SPs that must succeed or fail together:
 
 | Method | Description |
 |--------|-------------|
-| `ExecuteInTransactionAsync<T>()` | Execute SP with auto/manual transaction |
-| `ExecuteMultipleResultSetsAsync<T1, T2>()` | Execute SP returning 2 result sets |
-| `ExecuteMultipleResultSetsAsync<T1, T2, T3>()` | Execute SP returning 3 result sets |
-| `BeginTransactionAsync()` | Start a new transaction manually |
-| `CommitAsync()` | Commit the current transaction |
-| `RollbackAsync()` | Rollback the current transaction |
-| `HasActiveTransaction` | Check if transaction is active |
+| `ExecuteInTransactionAsync<T>(..., isRead = false)` | Execute SP for CQRS Query (`isRead: true`) or Command (`isRead: false`) |
+| `ExecuteMultipleResultSetsAsync<T1, T2>(..., isRead = false)` | Execute SP returning 2 result sets as tuple |
+| `ExecuteMultipleResultSetsAsync<T1, T2, T3>(..., isRead = false)` | Execute SP returning 3 result sets as tuple |
+| `BeginTransactionAsync()` | Manually start a transaction across multiple operations |
+| `CommitAsync()` | Commit active transaction |
+| `RollbackAsync()` | Rollback active transaction |
+| `HasActiveTransaction` | Boolean property indicating active transaction state |
 
-### IDbExecutorAsync (Standalone, No Transaction)
+### IDbExecutorAsync (Standalone Lightweight Executor)
 
 | Method | Description |
 |--------|-------------|
-| `QueryAsync<T>()` | Execute SP and return list |
-| `QuerySingleOrDefaultAsync<T>()` | Execute SP and return single entity |
-| `ExecuteAsync()` | Execute non-query SP |
-| `ExecuteScalarAsync<T>()` | Execute SP and return scalar |
+| `QueryAsync<T>()` | Execute SP query and return list |
+| `QuerySingleOrDefaultAsync<T>()` | Execute SP query and return single entity |
+| `ExecuteAsync()` | Execute non-query SP and return rows affected |
+| `ExecuteScalarAsync<T>()` | Execute SP and return scalar value |
 
 ---
 
 ## Best Practices
 
-1. **Use `using` or `await using`** for repository instances to ensure cleanup
-2. **Wrap multi-SP operations** in try-catch with explicit rollback
-3. **Use `resultSetIndex`** when you need only one result set from a multi-result SP
-4. **Use tuple methods** when you need all result sets at once
-5. **Register repositories as Scoped** in DI for per-request lifecycle
-
----
-
-## Error Handling
+1. **Pass `isRead: true` for all Read operations**: Avoids transaction log overhead and prevents unnecessary row/table locks.
+2. **Keep `isRead: false` (Default) for Write operations**: Guarantees atomic transaction execution and rollback protection.
+3. **Use Primary Constructors**: Clean dependency injection registration for repository classes.
+4. **Register as Scoped in DI**: Recommended for HTTP request-based lifecycles.
 
 
 

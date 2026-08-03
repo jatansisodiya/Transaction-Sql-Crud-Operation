@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
 namespace Transaction.SQLConnection.Interfaces;
 
@@ -22,6 +22,7 @@ public interface ITransactionalRepositoryAsync : IAsyncDisposable
     /// <param name="parameters">Optional SQL parameters.</param>
     /// <param name="commandTimeout">Optional command timeout in seconds.</param>
     /// <param name="resultSetIndex">Index of result set to read (0 = first, 1 = second, etc.).</param>
+    /// <param name="isRead">CQRS flag: true for read-only queries (bypasses transaction locking), false for write/command operations (default: false).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Result of type T.</returns>
     Task<T> ExecuteInTransactionAsync<T>(
@@ -29,6 +30,7 @@ public interface ITransactionalRepositoryAsync : IAsyncDisposable
         SqlParameter[]? parameters = null,
         int? commandTimeout = null,
         int resultSetIndex = 0,
+        bool isRead = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -39,12 +41,14 @@ public interface ITransactionalRepositoryAsync : IAsyncDisposable
     /// <param name="storedProcedureName">Name of the stored procedure.</param>
     /// <param name="parameters">Optional SQL parameters.</param>
     /// <param name="commandTimeout">Optional command timeout in seconds.</param>
+    /// <param name="isRead">CQRS flag: true for read-only queries, false for write/command operations (default: false).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Tuple containing both result sets.</returns>
     Task<(T1 Result1, T2 Result2)> ExecuteMultipleResultSetsAsync<T1, T2>(
         string storedProcedureName,
         SqlParameter[]? parameters = null,
         int? commandTimeout = null,
+        bool isRead = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -56,12 +60,14 @@ public interface ITransactionalRepositoryAsync : IAsyncDisposable
     /// <param name="storedProcedureName">Name of the stored procedure.</param>
     /// <param name="parameters">Optional SQL parameters.</param>
     /// <param name="commandTimeout">Optional command timeout in seconds.</param>
+    /// <param name="isRead">CQRS flag: true for read-only queries, false for write/command operations (default: false).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Tuple containing all three result sets.</returns>
     Task<(T1 Result1, T2 Result2, T3 Result3)> ExecuteMultipleResultSetsAsync<T1, T2, T3>(
         string storedProcedureName,
         SqlParameter[]? parameters = null,
         int? commandTimeout = null,
+        bool isRead = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -11,10 +11,10 @@ namespace Transaction.SQLConnection.Sql;
 /// Base repository with transactional support for stored procedure execution.
 /// Implements Unit of Work pattern with support for multiple result sets.
 /// </summary>
-public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
+public class TransactionalRepositoryAsync(IConnectionFactoryAsync connectionFactory, IAILogger logger) : ITransactionalRepositoryAsync
 {
-    private readonly IConnectionFactoryAsync _connectionFactory;
-    private readonly IAILogger _logger;
+    private readonly IConnectionFactoryAsync _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+    private readonly IAILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private const int DefaultCommandTimeout = 30;
 
     private SqlConnection? _connection;
@@ -34,188 +34,6 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
 
     /// <inheritdoc />
     public bool HasActiveTransaction => _transaction is not null;
-
-    public TransactionalRepositoryAsync(
-        IConnectionFactoryAsync connectionFactory,
-        IAILogger logger)
-    {
-        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
-
-    /// <inheritdoc />
-    public async Task<T> ExecuteInTransactionAsync<T>(
-        string storedProcedureName,
-        SqlParameter[]? parameters = null,
-        int? commandTimeout = null,
-        int resultSetIndex = 0,
-        CancellationToken cancellationToken = default)
-    {
-        ValidateExecutionState(storedProcedureName, resultSetIndex);
-
-        bool isStandaloneTransaction = !HasActiveTransaction;
-
-        try
-        {
-            if (isStandaloneTransaction)
-            {
-                await BeginTransactionAsync(cancellationToken);
-            }
-
-            var result = await ExecuteStoredProcedureAsync<T>(
-                storedProcedureName,
-                parameters,
-                commandTimeout,
-                resultSetIndex,
-                cancellationToken);
-
-            if (isStandaloneTransaction)
-            {
-                await CommitAsync(cancellationToken);
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Error executing stored procedure: {storedProcedureName} at result set {resultSetIndex}");
-
-            if (isStandaloneTransaction)
-            {
-                await RollbackAsync();
-            }
-
-            throw new DatabaseException(
-                $"Failed to execute stored procedure: {storedProcedureName}",
-                storedProcedureName,
-                resultSetIndex,
-                ex);
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task<(T1 Result1, T2 Result2)> ExecuteMultipleResultSetsAsync<T1, T2>(
-        string storedProcedureName,
-        SqlParameter[]? parameters = null,
-        int? commandTimeout = null,
-        CancellationToken cancellationToken = default)
-    {
-        ValidateExecutionState(storedProcedureName);
-
-        bool isStandaloneTransaction = !HasActiveTransaction;
-        T1 result1;
-        T2 result2;
-
-        try
-        {
-            if (isStandaloneTransaction)
-            {
-                await BeginTransactionAsync(cancellationToken);
-            }
-
-            await using var command = CreateCommand(storedProcedureName, parameters, commandTimeout);
-            
-            // Use explicit scope for reader to ensure it's closed before commit
-            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
-            {
-                // Read first result set
-                result1 = await EntityMapper.ReadResultSetAsync<T1>(reader, cancellationToken);
-
-                // Move to second result set
-                if (!await reader.NextResultAsync(cancellationToken))
-                {
-                    throw new InvalidOperationException("Expected second result set but none found.");
-                }
-
-                result2 = await EntityMapper.ReadResultSetAsync<T2>(reader, cancellationToken);
-                
-                // Explicitly close the reader before commit
-                await reader.CloseAsync();
-            }
-
-            if (isStandaloneTransaction)
-            {
-                await CommitAsync(cancellationToken);
-            }
-
-            return (result1, result2);
-        }
-        catch (Exception ex) when (ex is not DatabaseException)
-        {
-            _logger.LogError(ex, "Error executing multiple result sets: {StoredProcedure}", storedProcedureName);
-
-            if (isStandaloneTransaction)
-            {
-                await RollbackAsync();
-            }
-
-            throw new DatabaseException($"Failed to execute stored procedure with multiple result sets: {storedProcedureName}", storedProcedureName, ex);
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task<(T1 Result1, T2 Result2, T3 Result3)> ExecuteMultipleResultSetsAsync<T1, T2, T3>(
-        string storedProcedureName,
-        SqlParameter[]? parameters = null,
-        int? commandTimeout = null,
-        CancellationToken cancellationToken = default)
-    {
-        ValidateExecutionState(storedProcedureName);
-
-        bool isStandaloneTransaction = !HasActiveTransaction;
-        T1 result1;
-        T2 result2;
-        T3 result3;
-
-        try
-        {
-            if (isStandaloneTransaction)
-            {
-                await BeginTransactionAsync(cancellationToken);
-            }
-
-            await using var command = CreateCommand(storedProcedureName, parameters, commandTimeout);
-            
-            // Use explicit scope for reader to ensure it's closed before commit
-            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
-            {
-                result1 = await EntityMapper.ReadResultSetAsync<T1>(reader, cancellationToken);
-
-                if (!await reader.NextResultAsync(cancellationToken))
-                {
-                    throw new InvalidOperationException("Expected second result set but none found.");
-                }
-                result2 = await EntityMapper.ReadResultSetAsync<T2>(reader, cancellationToken);
-
-                if (!await reader.NextResultAsync(cancellationToken))
-                {
-                    throw new InvalidOperationException("Expected third result set but none found.");
-                }
-                result3 = await EntityMapper.ReadResultSetAsync<T3>(reader, cancellationToken);
-                
-                // Explicitly close the reader before commit
-                await reader.CloseAsync();
-            }
-
-            if (isStandaloneTransaction)
-            {
-                await CommitAsync(cancellationToken);
-            }
-
-            return (result1, result2, result3);
-        }
-        catch (Exception ex) when (ex is not DatabaseException)
-        {
-            _logger.LogError(ex, "Error executing multiple result sets: {StoredProcedure}", storedProcedureName);
-
-            if (isStandaloneTransaction)
-            {
-                await RollbackAsync();
-            }
-
-            throw new DatabaseException($"Failed to execute stored procedure with multiple result sets: {storedProcedureName}", storedProcedureName, ex);
-        }
-    }
 
     /// <inheritdoc />
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
@@ -264,6 +82,227 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
     }
 
     /// <inheritdoc />
+    public async Task<T> ExecuteInTransactionAsync<T>(
+        string storedProcedureName,
+        SqlParameter[]? parameters = null,
+        int? commandTimeout = null,
+        int resultSetIndex = 0,
+        bool isRead = false,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateExecutionState(storedProcedureName, resultSetIndex);
+
+        bool shouldManageTransaction = !isRead && !HasActiveTransaction;
+
+        try
+        {
+            var result = await ExecuteStoredProcedureAsync<T>(
+                storedProcedureName,
+                parameters,
+                commandTimeout,
+                resultSetIndex,
+                isRead,
+                cancellationToken);
+
+            if (shouldManageTransaction)
+            {
+                await CommitAsync(cancellationToken);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error executing stored procedure: {storedProcedureName} at result set {resultSetIndex} (isRead: {isRead})");
+
+            if (shouldManageTransaction)
+            {
+                await RollbackAsync();
+            }
+
+            throw new DatabaseException(
+                $"Failed to execute stored procedure: {storedProcedureName}",
+                storedProcedureName,
+                resultSetIndex,
+                ex);
+        }
+        finally
+        {
+            if (isRead && !HasActiveTransaction && _connection is not null)
+            {
+                await CleanupTransactionAsync();
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<(T1 Result1, T2 Result2)> ExecuteMultipleResultSetsAsync<T1, T2>(
+        string storedProcedureName,
+        SqlParameter[]? parameters = null,
+        int? commandTimeout = null,
+        bool isRead = false,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateExecutionState(storedProcedureName);
+
+        bool shouldManageTransaction = !isRead && !HasActiveTransaction;
+        T1 result1;
+        T2 result2;
+
+        try
+        {
+            await using var command = await CreateCommandAsync(storedProcedureName, parameters, commandTimeout, isRead, cancellationToken);
+            
+            // Use explicit scope for reader to ensure it's closed before commit
+            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            {
+                // Read first result set
+                result1 = await EntityMapper.ReadResultSetAsync<T1>(reader, cancellationToken);
+
+                // Move to second result set
+                if (!await reader.NextResultAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException("Expected second result set but none found.");
+                }
+
+                result2 = await EntityMapper.ReadResultSetAsync<T2>(reader, cancellationToken);
+                
+                // Explicitly close the reader before commit
+                await reader.CloseAsync();
+            }
+
+            if (shouldManageTransaction)
+            {
+                await CommitAsync(cancellationToken);
+            }
+
+            return (result1, result2);
+        }
+        catch (Exception ex) when (ex is not DatabaseException)
+        {
+            _logger.LogError(ex, "Error executing multiple result sets: {StoredProcedure} (isRead: {IsRead})", new { storedProcedureName, isRead });
+
+            if (shouldManageTransaction)
+            {
+                await RollbackAsync();
+            }
+
+            throw new DatabaseException($"Failed to execute stored procedure with multiple result sets: {storedProcedureName}", storedProcedureName, ex);
+        }
+        finally
+        {
+            if (isRead && !HasActiveTransaction && _connection is not null)
+            {
+                await CleanupTransactionAsync();
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<(T1 Result1, T2 Result2, T3 Result3)> ExecuteMultipleResultSetsAsync<T1, T2, T3>(
+        string storedProcedureName,
+        SqlParameter[]? parameters = null,
+        int? commandTimeout = null,
+        bool isRead = false,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateExecutionState(storedProcedureName);
+
+        bool shouldManageTransaction = !isRead && !HasActiveTransaction;
+        T1 result1;
+        T2 result2;
+        T3 result3;
+
+        try
+        {
+            await using var command = await CreateCommandAsync(storedProcedureName, parameters, commandTimeout, isRead, cancellationToken);
+            
+            // Use explicit scope for reader to ensure it's closed before commit
+            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            {
+                result1 = await EntityMapper.ReadResultSetAsync<T1>(reader, cancellationToken);
+
+                if (!await reader.NextResultAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException("Expected second result set but none found.");
+                }
+                result2 = await EntityMapper.ReadResultSetAsync<T2>(reader, cancellationToken);
+
+                if (!await reader.NextResultAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException("Expected third result set but none found.");
+                }
+                result3 = await EntityMapper.ReadResultSetAsync<T3>(reader, cancellationToken);
+                
+                // Explicitly close the reader before commit
+                await reader.CloseAsync();
+            }
+
+            if (shouldManageTransaction)
+            {
+                await CommitAsync(cancellationToken);
+            }
+
+            return (result1, result2, result3);
+        }
+        catch (Exception ex) when (ex is not DatabaseException)
+        {
+            _logger.LogError(ex, "Error executing multiple result sets: {StoredProcedure} (isRead: {IsRead})", new { storedProcedureName, isRead });
+
+            if (shouldManageTransaction)
+            {
+                await RollbackAsync();
+            }
+
+            throw new DatabaseException($"Failed to execute stored procedure with multiple result sets: {storedProcedureName}", storedProcedureName, ex);
+        }
+        finally
+        {
+            if (isRead && !HasActiveTransaction && _connection is not null)
+            {
+                await CleanupTransactionAsync();
+            }
+        }
+    }
+
+    private async Task<T> ExecuteStoredProcedureAsync<T>(
+        string storedProcedureName,
+        SqlParameter[]? parameters,
+        int? commandTimeout,
+        int resultSetIndex,
+        bool isRead,
+        CancellationToken cancellationToken)
+    {
+        await using var command = await CreateCommandAsync(storedProcedureName, parameters, commandTimeout, isRead, cancellationToken);
+
+        var targetType = typeof(T);
+
+        // Case 1: Return int (scalar value) for first result set
+        if (targetType == typeof(int) && resultSetIndex == 0)
+        {
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+            return result is not null && result != DBNull.Value
+                ? (T)(object)Convert.ToInt32(result)
+                : (T)(object)0;
+        }
+
+        // Cases 2, 3, 4: Return List<T>, single T, or specific result set
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        // Navigate to the requested result set
+        for (int i = 0; i < resultSetIndex; i++)
+        {
+            if (!await reader.NextResultAsync(cancellationToken))
+            {
+                throw new InvalidOperationException(
+                    $"Result set at index {resultSetIndex} not found. Stored procedure returned only {i + 1} result set(s).");
+            }
+        }
+
+        return await EntityMapper.ReadResultSetAsync<T>(reader, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task RollbackAsync()
     {
         if (_transaction is null)
@@ -304,45 +343,29 @@ public class TransactionalRepositoryAsync : ITransactionalRepositoryAsync
         }
     }
 
-    private async Task<T> ExecuteStoredProcedureAsync<T>(
+    private async Task<SqlCommand> CreateCommandAsync(
         string storedProcedureName,
         SqlParameter[]? parameters,
         int? commandTimeout,
-        int resultSetIndex,
+        bool isRead,
         CancellationToken cancellationToken)
     {
-        await using var command = CreateCommand(storedProcedureName, parameters, commandTimeout);
-
-        var targetType = typeof(T);
-
-        // Case 1: Return int (scalar value) for first result set
-        if (targetType == typeof(int) && resultSetIndex == 0)
+        // Centralized CQRS Connection & Transaction Management:
+        if (!isRead && !HasActiveTransaction)
         {
-            var result = await command.ExecuteScalarAsync(cancellationToken);
-            return result is not null && result != DBNull.Value
-                ? (T)(object)Convert.ToInt32(result)
-                : (T)(object)0;
+            // Write/Command operation without active transaction -> Begin transaction
+            await BeginTransactionAsync(cancellationToken);
+        }
+        else if (isRead && !HasActiveTransaction && _connection is null)
+        {
+            // Read/Query operation without active transaction -> Open standalone connection without transaction
+            _connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         }
 
-        // Cases 2, 3, 4: Return List<T>, single T, or specific result set
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        // CQRS logic: If isRead = true, detach transaction so read query runs non-transactionally without locks
+        SqlTransaction? activeTransaction = isRead ? null : _transaction;
 
-        // Navigate to the requested result set
-        for (int i = 0; i < resultSetIndex; i++)
-        {
-            if (!await reader.NextResultAsync(cancellationToken))
-            {
-                throw new InvalidOperationException(
-                    $"Result set at index {resultSetIndex} not found. Stored procedure returned only {i + 1} result set(s).");
-            }
-        }
-
-        return await EntityMapper.ReadResultSetAsync<T>(reader, cancellationToken);
-    }
-
-    private SqlCommand CreateCommand(string storedProcedureName, SqlParameter[]? parameters, int? commandTimeout)
-    {
-        var command = new SqlCommand(storedProcedureName, _connection, _transaction)
+        var command = new SqlCommand(storedProcedureName, _connection, activeTransaction)
         {
             CommandType = CommandType.StoredProcedure,
             CommandTimeout = commandTimeout ?? DefaultCommandTimeout
