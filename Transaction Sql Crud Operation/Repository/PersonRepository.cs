@@ -1,5 +1,5 @@
-using Microsoft.Data.SqlClient;
 using CommonLogger;
+using Dapper;
 using System.Data;
 using Transaction_Sql_Crud_Operation.Models;
 using Transaction.SQLConnection.Interfaces;
@@ -16,7 +16,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, IAILogge
 
         return await repository.ExecuteMultipleResultSetsAsync<List<Person>, List<Qualification>>(
             "usp_Person_GetAll",
-            [],isRead: true);
+            isRead: true);
     }
 
     // Get person by ID with qualifications (two result sets)
@@ -28,7 +28,8 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, IAILogge
 
         return await repository.ExecuteMultipleResultSetsAsync<Person?, List<Qualification>>(
             "usp_Person_GetById",
-            [new SqlParameter("@PersonId", personId)]);
+            new { PersonId = personId },
+            isRead: true);
     }
 
     // Create person with qualifications (transactional - multiple SPs)
@@ -44,23 +45,16 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, IAILogge
         {
             await repository.BeginTransactionAsync();
 
-            // Insert person with output parameter
-            var personIdParam = new SqlParameter("@PersonId", SqlDbType.Int)
-            {
-                Direction = ParameterDirection.Output
-            };
+            var p = new DynamicParameters();
+            p.Add("@Name", request.Name);
+            p.Add("@MobileNo", request.MobileNo);
+            p.Add("@Age", request.Age);
+            p.Add("@Address", request.Address);
+            p.Add("@PersonId", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            await repository.ExecuteInTransactionAsync<int>(
-                "usp_Person_Insert",
-                [
-                    new SqlParameter("@Name", request.Name),
-                    new SqlParameter("@MobileNo", request.MobileNo),
-                    new SqlParameter("@Age", request.Age),
-                    new SqlParameter("@Address", request.Address ?? (object)DBNull.Value),
-                    personIdParam
-                ]);
+            await repository.ExecuteInTransactionAsync<int>("usp_Person_Insert", p);
 
-            var personId = (int)personIdParam.Value;
+            var personId = p.Get<int>("@PersonId");
 
             // Insert qualifications if any
             if (request.Qualifications?.Count > 0)
@@ -99,13 +93,14 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, IAILogge
             // Update person
             var rowsAffected = await repository.ExecuteInTransactionAsync<int>(
                 "usp_Person_Update",
-                [
-                    new SqlParameter("@PersonId", personId),
-                    new SqlParameter("@Name", request.Name),
-                    new SqlParameter("@MobileNo", request.MobileNo),
-                    new SqlParameter("@Age", request.Age),
-                    new SqlParameter("@Address", request.Address ?? (object)DBNull.Value)
-                ]);
+                new
+                {
+                    PersonId = personId,
+                    request.Name,
+                    request.MobileNo,
+                    request.Age,
+                    request.Address
+                });
 
             if (rowsAffected == 0)
             {
@@ -119,7 +114,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, IAILogge
                 // Delete existing qualifications
                 await repository.ExecuteInTransactionAsync<int>(
                     "usp_Qualification_DeleteByPersonId",
-                    [new SqlParameter("@PersonId", personId)]);
+                    new { PersonId = personId });
 
                 // Insert new qualifications
                 foreach (var qualification in request.Qualifications)
@@ -150,7 +145,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, IAILogge
 
         var rowsAffected = await repository.ExecuteInTransactionAsync<int>(
             "usp_Person_Delete",
-            [new SqlParameter("@PersonId", personId)]);
+            new { PersonId = personId });
 
         return rowsAffected > 0;
     }
@@ -175,7 +170,7 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, IAILogge
 
         var rowsAffected = await repository.ExecuteInTransactionAsync<int>(
             "usp_Qualification_Delete",
-            [new SqlParameter("@QualificationId", qualificationId)]);
+            new { QualificationId = qualificationId });
 
         return rowsAffected > 0;
     }
@@ -183,20 +178,14 @@ public class PersonRepository(ITransactionalRepositoryAsync repository, IAILogge
     // Internal helper for adding qualification
     private async Task<int> AddQualificationInternalAsync(int personId, QualificationRequest request)
     {
-        var qualificationIdParam = new SqlParameter("@QualificationId", SqlDbType.Int)
-        {
-            Direction = ParameterDirection.Output
-        };
+        var p = new DynamicParameters();
+        p.Add("@PersonId", personId);
+        p.Add("@QualificationName", request.QualificationName);
+        p.Add("@Marks", request.Marks);
+        p.Add("@QualificationId", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-        await repository.ExecuteInTransactionAsync<int>(
-            "usp_Qualification_Insert",
-            [
-                new SqlParameter("@PersonId", personId),
-                new SqlParameter("@QualificationName", request.QualificationName),
-                new SqlParameter("@Marks", request.Marks),
-                qualificationIdParam
-            ]);
+        await repository.ExecuteInTransactionAsync<int>("usp_Qualification_Insert", p);
 
-        return (int)qualificationIdParam.Value;
+        return p.Get<int>("@QualificationId");
     }
 }

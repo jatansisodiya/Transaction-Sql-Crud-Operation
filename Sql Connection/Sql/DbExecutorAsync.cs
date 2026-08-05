@@ -1,31 +1,24 @@
 using CommonLogger;
-using Microsoft.Data.SqlClient;
+using Dapper;
 using System.Data;
 using Transaction.SQLConnection.Exceptions;
 using Transaction.SQLConnection.Interfaces;
-using Transaction.SQLConnection.Mapping;
 
 namespace Transaction.SQLConnection.Sql;
 
 /// <summary>
-/// Executes database commands without transaction management.
+/// High-performance database executor using Dapper without transaction management.
 /// Use for simple read operations that don't require transactions.
 /// </summary>
-public sealed class DbExecutorAsync : IDbExecutorAsync
+public sealed class DbExecutorAsync(IConnectionFactoryAsync connectionFactory, IAILogger logger) : IDbExecutorAsync
 {
-    private readonly IConnectionFactoryAsync _connectionFactory;
-    private readonly IAILogger _logger;
+    private readonly IConnectionFactoryAsync _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+    private readonly IAILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private const int DefaultCommandTimeout = 30;
-
-    public DbExecutorAsync(IConnectionFactoryAsync connectionFactory, IAILogger logger)
-    {
-        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     public async Task<IEnumerable<T>> QueryAsync<T>(
         string storedProcedure,
-        SqlParameter[]? parameters = null,
+        object? parameters = null,
         int? commandTimeout = null,
         CancellationToken cancellationToken = default) where T : new()
     {
@@ -34,10 +27,12 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
         try
         {
             await using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
-            await using var command = CreateCommand(connection, storedProcedure, parameters, commandTimeout);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            return await EntityMapper.ReadListAsync<T>(reader, cancellationToken);
+            return await connection.QueryAsync<T>(
+                storedProcedure,
+                parameters,
+                commandType: CommandType.StoredProcedure,
+                commandTimeout: commandTimeout ?? DefaultCommandTimeout);
         }
         catch (Exception ex) when (ex is not DatabaseException)
         {
@@ -48,7 +43,7 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
 
     public async Task<T?> QuerySingleOrDefaultAsync<T>(
         string storedProcedure,
-        SqlParameter[]? parameters = null,
+        object? parameters = null,
         int? commandTimeout = null,
         CancellationToken cancellationToken = default) where T : new()
     {
@@ -57,10 +52,12 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
         try
         {
             await using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
-            await using var command = CreateCommand(connection, storedProcedure, parameters, commandTimeout);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-            return await EntityMapper.ReadSingleAsync<T>(reader, cancellationToken);
+            return await connection.QuerySingleOrDefaultAsync<T>(
+                storedProcedure,
+                parameters,
+                commandType: CommandType.StoredProcedure,
+                commandTimeout: commandTimeout ?? DefaultCommandTimeout);
         }
         catch (Exception ex) when (ex is not DatabaseException)
         {
@@ -71,7 +68,7 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
 
     public async Task<int> ExecuteAsync(
         string storedProcedure,
-        SqlParameter[]? parameters = null,
+        object? parameters = null,
         int? commandTimeout = null,
         CancellationToken cancellationToken = default)
     {
@@ -80,9 +77,12 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
         try
         {
             await using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
-            await using var command = CreateCommand(connection, storedProcedure, parameters, commandTimeout);
 
-            return await command.ExecuteNonQueryAsync(cancellationToken);
+            return await connection.ExecuteAsync(
+                storedProcedure,
+                parameters,
+                commandType: CommandType.StoredProcedure,
+                commandTimeout: commandTimeout ?? DefaultCommandTimeout);
         }
         catch (Exception ex) when (ex is not DatabaseException)
         {
@@ -93,7 +93,7 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
 
     public async Task<T?> ExecuteScalarAsync<T>(
         string storedProcedure,
-        SqlParameter[]? parameters = null,
+        object? parameters = null,
         int? commandTimeout = null,
         CancellationToken cancellationToken = default)
     {
@@ -102,41 +102,17 @@ public sealed class DbExecutorAsync : IDbExecutorAsync
         try
         {
             await using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
-            await using var command = CreateCommand(connection, storedProcedure, parameters, commandTimeout);
 
-            var result = await command.ExecuteScalarAsync(cancellationToken);
-
-            if (result is null || result == DBNull.Value)
-            {
-                return default;
-            }
-
-            return (T)Convert.ChangeType(result, typeof(T));
+            return await connection.ExecuteScalarAsync<T>(
+                storedProcedure,
+                parameters,
+                commandType: CommandType.StoredProcedure,
+                commandTimeout: commandTimeout ?? DefaultCommandTimeout);
         }
         catch (Exception ex) when (ex is not DatabaseException)
         {
             _logger.LogError(ex, $"Error executing scalar: {storedProcedure}");
             throw new DatabaseException($"Failed to execute scalar: {storedProcedure}", storedProcedure, ex);
         }
-    }
-
-    private static SqlCommand CreateCommand(
-        SqlConnection connection,
-        string storedProcedure,
-        SqlParameter[]? parameters,
-        int? commandTimeout)
-    {
-        var command = new SqlCommand(storedProcedure, connection)
-        {
-            CommandType = CommandType.StoredProcedure,
-            CommandTimeout = commandTimeout ?? DefaultCommandTimeout
-        };
-
-        if (parameters is { Length: > 0 })
-        {
-            command.Parameters.AddRange(parameters);
-        }
-
-        return command;
     }
 }

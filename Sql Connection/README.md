@@ -1,10 +1,9 @@
 # Transaction.SQLConnection
 
-A production-ready, reusable SQL connection class library for .NET 10+ applications implementing the **Unit of Work pattern** and **CQRS (Command Query Responsibility Segregation)** with **ADO.NET** for MS SQL Server.
+A production-ready, reusable SQL connection class library for .NET 10+ applications implementing the **Unit of Work pattern** and **CQRS (Command Query Responsibility Segregation)** with **Dapper ORM** and **ADO.NET** for MS SQL Server.
 
 ## Folder Structure
 
-```text
 Transaction.SQLConnection/
 │
 ├── Transaction.SQLConnection.csproj
@@ -29,6 +28,7 @@ Transaction.SQLConnection/
 
 ## Features
 
+- ✅ **High-Performance Dapper ORM Integration** - Fast, lightweight object mapping using Dapper (`QueryAsync`, `QueryMultipleAsync`, `ExecuteAsync`, `ExecuteScalarAsync`)
 - ✅ **CQRS Support (Command Query Responsibility Segregation)** - Separate Read Queries (`isRead = true`) from Write Commands (`isRead = false`)
 - ✅ **Centralized `CreateCommandAsync` Orchestration** - Single point for connection initialization, transaction attachment, and command setup
 - ✅ **Unit of Work Pattern** - Transaction management across single or multiple operations

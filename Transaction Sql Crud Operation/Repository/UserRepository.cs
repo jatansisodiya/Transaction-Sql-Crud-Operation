@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using CommonLogger;
 using Transaction_Sql_Crud_Operation.Models;
 using Transaction.SQLConnection.Interfaces;
@@ -15,7 +14,7 @@ public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger 
 
         return await repository.ExecuteInTransactionAsync<int>(
             "usp_GetAspNetUsersCount",
-            []);
+            isRead: true);
     }
 
     // Case 2: Return single entity
@@ -27,7 +26,8 @@ public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger 
 
         return await repository.ExecuteInTransactionAsync<User>(
             "usp_GetAspNetUserById",
-            [new SqlParameter("@UserId", userId)]);
+            new { UserId = userId },
+            isRead: true);
     }
 
     // Case 3: Return list of entities
@@ -37,7 +37,7 @@ public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger 
 
         return await repository.ExecuteInTransactionAsync<List<User>>(
             "usp_GetAllAspNetUsers",
-            []);
+            isRead: true);
     }
 
     // Case 4: Return specific result set by index
@@ -47,8 +47,8 @@ public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger 
 
         return await repository.ExecuteInTransactionAsync<List<User>>(
             "usp_GetAllAspNetUsersMultipleResults",
-            [],
-            resultSetIndex: 0);
+            resultSetIndex: 0,
+            isRead: true);
     }
 
     // Case 5: Return two result sets as tuple
@@ -58,7 +58,7 @@ public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger 
 
         return await repository.ExecuteMultipleResultSetsAsync<List<User>, UserSummary>(
             "usp_GetAspNetUsersWithSummary",
-            []);
+            isRead: true);
     }
 
     // Case 6: Return three result sets as tuple
@@ -68,7 +68,7 @@ public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger 
 
         return await repository.ExecuteMultipleResultSetsAsync<List<User>, List<User>, UserSummary>(
             "usp_GetAspNetUsersGroupedWithSummary",
-            []);
+            isRead: true);
     }
 
     // Case 7: Multiple SPs in single transaction - if any fails, rollback all
@@ -78,32 +78,32 @@ public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger 
 
         try
         {
-            // Begin transaction manually
             await repository.BeginTransactionAsync();
 
             // SP 1: Create user and get new ID
             var createdId = await repository.ExecuteInTransactionAsync<int>(
                 "usp_CreateAspNetUser",
-                [
-                    new SqlParameter("@UserName", user.UserName),
-                    new SqlParameter("@Email", user.Email ?? (object)DBNull.Value),
-                    new SqlParameter("@PhoneNumber", user.PhoneNumber ?? (object)DBNull.Value)
-                ]);
+                new
+                {
+                    user.UserName,
+                    user.Email,
+                    user.PhoneNumber
+                });
 
             // SP 2: Add additional user details
             await repository.ExecuteInTransactionAsync<int>(
                 "usp_AddUserDetails",
-                [
-                    new SqlParameter("@UserId", createdId.ToString()),
-                    new SqlParameter("@AdditionalInfo", additionalInfo)
-                ]);
+                new
+                {
+                    UserId = createdId.ToString(),
+                    AdditionalInfo = additionalInfo
+                });
 
             // SP 3: Fetch created user to return
             var createdUser = await repository.ExecuteInTransactionAsync<User>(
                 "usp_GetAspNetUserById",
-                [new SqlParameter("@UserId", createdId.ToString())]);
+                new { UserId = createdId.ToString() });
 
-            // All SPs succeeded - commit transaction
             await repository.CommitAsync();
 
             logger.LogInformation($"User created successfully with ID: {createdId}");
@@ -113,7 +113,6 @@ public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger 
         {
             logger.LogError(ex, "Failed to create user with details. Rolling back transaction");
 
-            // Rollback all changes if any SP fails
             if (repository.HasActiveTransaction)
             {
                 await repository.RollbackAsync();
@@ -132,16 +131,11 @@ public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger 
 
         try
         {
-            // Begin transaction manually
             await repository.BeginTransactionAsync();
 
-            // Call first method (uses active transaction)
             var updatedCount = await UpdateUsersByCriteriaAsync(criteria);
-
-            // Call second method (uses same active transaction)
             var updatedUsers = await FetchUpdatedUsersAsync(criteria);
 
-            // All operations succeeded - commit transaction
             await repository.CommitAsync();
 
             logger.LogInformation($"Updated {updatedCount} users successfully");
@@ -160,23 +154,22 @@ public class UserRepository(ITransactionalRepositoryAsync repository, IAILogger 
         }
     }
 
-    // Helper method for Case 8 - can also be called independently
     public async Task<int> UpdateUsersByCriteriaAsync(string criteria)
     {
         logger.LogInformation($"Updating users by criteria: {criteria}");
 
         return await repository.ExecuteInTransactionAsync<int>(
             "usp_UpdateUsersByCriteria",
-            [new SqlParameter("@Criteria", criteria)]);
+            new { Criteria = criteria });
     }
 
-    // Helper method for Case 8 - can also be called independently
     public async Task<List<User>> FetchUpdatedUsersAsync(string criteria)
     {
         logger.LogInformation($"Fetching updated users by criteria: {criteria}");
 
         return await repository.ExecuteInTransactionAsync<List<User>>(
             "usp_GetUsersByCriteria",
-            [new SqlParameter("@Criteria", criteria)]);
+            new { Criteria = criteria },
+            isRead: true);
     }
 }
