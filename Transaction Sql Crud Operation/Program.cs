@@ -66,6 +66,8 @@ builder.Services.AddOutputCache(options =>
         policy.Expire(TimeSpan.FromMinutes(10)));
 });
 
+builder.Configuration.AddEnvironmentVariables().AddCommandLine(args);
+
 var app = builder.Build();
 
 app.UseExceptionHandler();

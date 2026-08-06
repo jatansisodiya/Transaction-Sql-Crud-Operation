@@ -26,6 +26,10 @@ jobs:
       - name: dotnet publish
         run: dotnet publish ".\Transaction Sql Crud Operation\Transaction Sql Crud Operation.csproj" -c Release -o "${{github.workspace}}/mytransapp"
 
+      - name: Restrict development appsettings in production artifact
+        run: Remove-Item -Path "${{ github.workspace }}/mytransapp/appsettings.Development.json" -ErrorAction SilentlyContinue
+        shell: pwsh
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -52,6 +56,20 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_209CC44F33374B79A9D8A92D632C2349 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_7C6D2D88F8D04BDEAAF7A9773DF6B03B }}
 
+      - name: Set App Settings for Production environment
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'transaction'
+          slot-name: 'Production'
+          app-settings-json: |
+            [
+              {
+                "name": "ASPNETCORE_ENVIRONMENT",
+                "value": "Production",
+                "slotSetting": false
+              }
+            ]
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -59,4 +77,3 @@ jobs:
           app-name: 'transaction'
           slot-name: 'Production'
           package: .
-          

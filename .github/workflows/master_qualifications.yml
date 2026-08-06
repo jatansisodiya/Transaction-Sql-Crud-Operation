@@ -26,6 +26,10 @@ jobs:
       - name: dotnet publish
         run: dotnet publish Qualification/Qualification.csproj  -c Release -o "${{ github.workspace }}/myapp"
 
+      - name: Restrict development appsettings in production artifact
+        run: Remove-Item -Path "${{ github.workspace }}/myapp/appsettings.Development.json" -ErrorAction SilentlyContinue
+        shell: pwsh
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -52,6 +56,20 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B046658B722D454C8010EBCB91C2082C }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C8DF9789E0924B26B568ECCD4DCD52EA }}
 
+      - name: Set App Settings for Production environment
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'Qualifications'
+          slot-name: 'Production'
+          app-settings-json: |
+            [
+              {
+                "name": "ASPNETCORE_ENVIRONMENT",
+                "value": "Production",
+                "slotSetting": false
+              }
+            ]
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -59,4 +77,3 @@ jobs:
           app-name: 'Qualifications'
           slot-name: 'Production'
           package: .
-          

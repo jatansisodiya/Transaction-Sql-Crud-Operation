@@ -21,6 +21,8 @@ builder.Services.AddCommonLogger();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+builder.Configuration.AddEnvironmentVariables().AddCommandLine(args);
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
