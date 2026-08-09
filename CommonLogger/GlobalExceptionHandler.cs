@@ -2,6 +2,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing;
 
 namespace CommonLogger;
@@ -18,10 +19,18 @@ public class GlobalExceptionHandler(IAILogger logger) : IExceptionHandler
             return false;
         }
 
-        // Extract route & query info for telemetry properties
+        // Extract route & action descriptor info for telemetry properties
+        var endpoint = httpContext.GetEndpoint();
+        var actionDescriptor = endpoint?.Metadata.GetMetadata<ControllerActionDescriptor>();
+
         var routeData = httpContext.GetRouteData();
-        string controllerName = routeData.Values["controller"]?.ToString() ?? "UnknownController";
-        string actionName = routeData.Values["action"]?.ToString() ?? request.Path;
+        string controllerName = actionDescriptor?.ControllerName 
+                             ?? routeData.Values["controller"]?.ToString() 
+                             ?? "UnknownController";
+
+        string actionName = actionDescriptor?.ActionName 
+                         ?? routeData.Values["action"]?.ToString() 
+                         ?? request.Path;
 
         string clientIp = request.Headers["X-Forwarded-For"].FirstOrDefault() 
                           ?? httpContext.Connection.RemoteIpAddress?.ToString() 

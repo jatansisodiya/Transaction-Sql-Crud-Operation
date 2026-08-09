@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Real_Time_MCP.FunctionApp": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7277",
+      "launchBrowser": false
+    }
+  }
+}

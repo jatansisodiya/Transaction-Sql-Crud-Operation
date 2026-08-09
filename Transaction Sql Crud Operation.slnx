@@ -5,5 +5,6 @@
     <Project Path="Sql Connection/Transaction.SQLConnection.csproj" Id="94366ccb-f533-4268-a53e-f928645dc133" />
   </Folder>
   <Project Path="Qualification/Qualification.csproj" />
+  <Project Path="Real-Time-MCP.FunctionApp/Real-Time-MCP.FunctionApp.csproj" />
   <Project Path="Transaction Sql Crud Operation/Transaction Sql Crud Operation.csproj" />
 </Solution>
