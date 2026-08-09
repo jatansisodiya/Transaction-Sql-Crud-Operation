@@ -1,0 +1,22 @@
+﻿FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+
+WORKDIR /src
+
+COPY ["Real-Time-MCP.FunctionApp/Real-Time-MCP.FunctionApp.csproj", "Real-Time-MCP.FunctionApp/"]
+COPY ["CommonLogger/CommonLogger.csproj", "CommonLogger/"]
+COPY ["Message.Publish/Message.Publish.csproj", "Message.Publish/"]
+
+RUN dotnet restore "Real-Time-MCP.FunctionApp/Real-Time-MCP.FunctionApp.csproj"
+
+COPY . .
+
+WORKDIR "/src/Real-Time-MCP.FunctionApp"
+
+RUN dotnet publish "Real-Time-MCP.FunctionApp.csproj" \
+    -c Release \
+    -o /home/site/wwwroot \
+    --no-restore
+
+FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated10.0
+
+COPY --from=build /home/site/wwwroot /home/site/wwwroot

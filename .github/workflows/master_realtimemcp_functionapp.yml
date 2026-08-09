@@ -1,0 +1,59 @@
+# Docs for the Azure Functions Deploy action: https://github.com/Azure/functions-action
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy .NET Core Function App to Azure Function App - realtimemcp
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read # Required for actions/checkout
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Build with dotnet
+        run: dotnet build ".\Real-Time-MCP.FunctionApp\Real-Time-MCP.FunctionApp.csproj" --configuration Release
+
+      - name: dotnet publish
+        run: dotnet publish ".\Real-Time-MCP.FunctionApp\Real-Time-MCP.FunctionApp.csproj" -c Release -o "${{ github.workspace }}/output"
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: .net-functionapp
+          path: ${{ github.workspace }}/output
+
+  deploy:
+    runs-on: windows-latest
+    needs: build
+    permissions:
+      id-token: write # Required for OIDC authentication
+      contents: read # Required for actions/checkout
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-functionapp
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.REALTIMEMCP_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.REALTIMEMCP_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.REALTIMEMCP_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Function App
+        uses: Azure/functions-action@v1
+        with:
+          app-name: 'realtimemcp'
+          package: '.'
