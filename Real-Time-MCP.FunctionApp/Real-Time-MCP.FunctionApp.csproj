@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CommonLogger\CommonLogger.csproj" />
+    <ProjectReference Include="..\Message.Publish\Message.Publish.csproj" />
   </ItemGroup>
 
 </Project>

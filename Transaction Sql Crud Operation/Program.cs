@@ -1,4 +1,5 @@
 using CommonLogger;
+using Message.Publish.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using Transaction_Sql_Crud_Operation.Infrastructure;
@@ -56,6 +57,10 @@ builder.Services.AddSwaggerGen(s =>
 // ===== SQL Connection & Repository Registration =====
 builder.Services.AddTransactionSqlConnection();
 builder.Services.AddRepositories(); // Auto-discovers all *Repository classes
+// =====================================================
+
+// ===== Azure Service Bus Publisher Registration =====
+builder.Services.AddMessagePublisher(builder.Configuration);
 // =====================================================
 
 // Add output caching services and define a cache policy for the OpenAPI endpoint 
